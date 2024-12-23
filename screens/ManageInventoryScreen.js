@@ -1,28 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Button } from '@react-navigation/elements';
 
-const HomeScreen = () => {
+const ManageInventoryScreen = () => {
     const navigation = useNavigation();
 
     return (
     <View style={styles.container}>
-        <Text style={styles.title}>Platu Pro</Text>
-        <Button 
-        onPress={()=>navigation.navigate('ManageInventory')}>
-            Manage Inventory
-        </Button>
-        <Button 
-        onPress={()=>navigation.navigate('Restocking')}>
-            Restocking List
-        </Button>
-        <Button 
-        onPress={()=>navigation.navigate('Announcemence')}>
-            Announcemence
-        </Button>
-
-        
+        <Text style={styles.title}>Manage Inventory</Text>
+        <Text>List of items.... for add, update, delete</Text>
         
     </View>
     );
@@ -32,7 +18,7 @@ const styles = StyleSheet.create({
     container:{
         flex:1,
         padding:24,
-        backgroundColor:'#FDAE81',
+        backgroundColor:'#FB8E65',
         gap:12,
     },
     title:{
@@ -50,4 +36,4 @@ const styles = StyleSheet.create({
 });
 
 
-export default HomeScreen;
+export default ManageInventoryScreen;
