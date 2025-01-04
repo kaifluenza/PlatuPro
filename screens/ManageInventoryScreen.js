@@ -1,15 +1,38 @@
-import React from 'react';
-import { View, Text, StyleSheet} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SectionList, Button} from 'react-native';
+import inventoryData from '../data/inventoryData';
 
 const ManageInventoryScreen = () => {
-    const navigation = useNavigation();
+    //const navigation = useNavigation();
 
+    const [data, setData] = useState(inventoryData);
+
+    const addItem = () => {
+        setData([...data,newItem]);
+    }
+    
     return (
     <View style={styles.container}>
         <Text style={styles.title}>Manage Inventory</Text>
-        <Text>List of items.... for add, update, delete</Text>
         
+        <Button 
+            title="Add New"
+            color="yellow"
+            onPress={addItem}
+        />
+
+        <SectionList
+            sections={data}
+            keyExtractor={(item,index)=>item+index}
+            renderItem={({item})=>(
+                <View style={styles.item}>
+                    <Text>{item}</Text>
+                </View>)} 
+            renderSectionHeader={({section:{title}})=>(
+                <Text style={styles.sectionHeader}>{title}</Text>
+            )}          
+        />
+            
     </View>
     );
 };
@@ -24,14 +47,27 @@ const styles = StyleSheet.create({
     title:{
         marginTop:16,
         paddingVertical:8,
-        //borderWidth:4,
-        //borderColor:"#F67C12",
-        //borderRadius:6,
-        //backgroundColor:'#F9E96B',
         color:'#FFF4E2',
         textAlign:'center',
         fontSize:32,
         fontWeight:'bold',
+    },
+    sectionHeader:{
+        fontSize: 18,
+        fontWeight: "bold",
+        backgroundColor: "#FFCB5C",
+        borderRadius:8,
+        color: "black",
+        padding:4,
+    },
+    item:{
+        padding: 10,
+        backgroundColor: "#FF937C",
+        marginVertical: 4,
+        borderRadius: 5,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
 });
 
