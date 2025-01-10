@@ -13,7 +13,7 @@ const inventoryData = [
     },
     {
         title:"Misc.",
-        data: ["Dinner Napkins",],
+        data: ["Dinner Napkins","Silken Tofu"],
     },
 ];
 

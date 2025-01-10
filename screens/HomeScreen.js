@@ -10,7 +10,7 @@ const HomeScreen = () => {
     <View style={styles.container}>
         <Text style={styles.title}>Platu Pro</Text>
         <Button 
-        onPress={()=>navigation.navigate('ManageInventory')}>
+        onPress={()=>navigation.navigate('Inventory')}>
             Manage Inventory
         </Button>
         <Button 

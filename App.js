@@ -10,7 +10,7 @@ const RootStack = createNativeStackNavigator({
   initialRouteName:'Home',
   screens:{
     Home:HomeScreen,
-    ManageInventory:ManageInventoryScreen,
+    Inventory:ManageInventoryScreen,
     Restocking:RestockingScreen,
     Announcemence:AnnouncemenceScreen,
   },
