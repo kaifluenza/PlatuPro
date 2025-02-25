@@ -5,25 +5,24 @@ import BouncyCheckbox from 'react-native-bouncy-checkbox';
 import inventoryData from '../data/inventoryData';
 
 
-
 const ManageInventoryScreen = () => {
 
-    const [data, setData] = useState(inventoryData);
+    const [data, setData] = useState(new Map(inventoryData));
     const [modalVisible, setModalVisible] = useState(false);
     const [newItem, setNewItem] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [newCategory, setNewCategory] = useState("");
     const [localCheck, setLocalCheck] = useState(false);
     const [deleteBtn, setDeleteBtn] = useState(false);
-    let items_to_delete = []; //stores object or object ID?
+    let items_to_delete = []; 
     let categories_to_delete = [];
 
     //for managing dropdown picker of categories
     const [open, setOpen] = useState(false);
     const [categories, setCategories] = useState(
         [  
-            ...data.map((category)=>({label:category.title, value:category.title,})), 
-            {label:"New Category", value:"New Category" }
+            ...Array.from(data.keys()).map((category)=>({label:category, value:category})),
+            {label:"New Category", value:"New Category"}
         ]
     );
 
@@ -33,41 +32,35 @@ const ManageInventoryScreen = () => {
             alert("You must provide the item name!");
             return;
         }
-        console.log("new item entered: ", newItem);
-
         //user added item, but does not select category
         if(selectedCategory===""){
             alert("You must assign a category to the item!")
             return;
         }
-        //if here, user has selected category (could be existing one or new)
         
-        //user select create new category but dont name it
+        //user has selected category: create new category but dont name it
         if(selectedCategory==="New Category"){
             if(newCategory.trim()===""){
                 alert("You forgot to name the new category!");
                 return;
-            }else{ //user selected new category and provided new category name
-                //add new category and item
-                setData([...data, {title:newCategory, data:[newItem]}]);
-                //update categories in the dropdown picker
-                setCategories([...categories.slice(0,categories.length-1), {label:newCategory, value:newCategory}, ...categories.slice(categories.length-1)]);
-            }
-        }else{ //user has selected existing category: loop data array to find matching category index
-            const categoryIndex = data.findIndex(
-                (category => category.title === selectedCategory)
-            );
+            }else{ //user provided new category name 
+            // add new category and item to the Map
+            data.set(newCategory, new Set([newItem]));
+            setData(new Map(data)); //update with fresh map to trigger re-render
 
-            if(categoryIndex !== -1){ //index of matching category found
-                const updatedData = [ //create new data array
-                    ...data.slice(0,categoryIndex), 
-                    {...data[categoryIndex],data:[...data[categoryIndex].data, newItem]},
-                    ...data.slice(categoryIndex+1),
-                ];
-
-                setData(updatedData);
+            //update dropdown categories
+            setCategories([
+                ...Array.from(data.keys()).map((category)=>({label:category,value:category})),
+                {label:"New Category", value:"New Category"}
+            ]);  
             }
-            console.log("new updated array", data);
+        }else{ //user has selected existing category
+           if(data.has(selectedCategory)){
+                const categoryItems = data.get(selectedCategory); //get all the items from key 'selectedCtgry'
+                categoryItems.add(newItem); //add the new item to existing category
+                data.set(selectedCategory,categoryItems);
+                setData(new Map(data));
+           }
         }
           
         //reset modal fields
@@ -78,23 +71,28 @@ const ManageInventoryScreen = () => {
     }
 
     const handleDelete = () => {
-        //delete items from the data
-        const filteredItems = data.map(section => (
-            { ...section, data:section.data.filter(item => !items_to_delete.includes(item))}
-        ));
+        //delete selected items 
+        items_to_delete.forEach((item)=>{
+            data.forEach((items)=>{
+                items.delete(item); //remove item from the map
+            });
+        });
 
-        console.log("after fitlering items: ", filteredItems);
+        //delete selected categories 
+        categories_to_delete.forEach((category)=>{
+            data.delete(category); //remove category from map
+        });
 
-        //then delete categories 
-        const filteredCtgry = filteredItems.filter(section => !categories_to_delete.includes(section.title));
+        setData(new Map(data));  //update the data state, trigger re-render
 
-        //update categories in dropdown list too!
+        console.log("categories: ", Array.from(data.keys()));
+        //update categories in dropdown 
         setCategories([
-            ...filteredCtgry.map((section)=>({label:section.title,value:section.title})),
+            ...Array.from(data.keys()).map((category)=>({label:category,value:category})),
             {label:"New Category", value:"New Category"}
         ]);
 
-        setData(filteredCtgry);
+        //reset 
         items_to_delete=[];
         categories_to_delete=[];
     }
@@ -154,18 +152,9 @@ const ManageInventoryScreen = () => {
                 onPress={()=> {
                     if(!deleteBtn){
                         setDeleteBtn(true)
-                    }else{
-                        if(categories_to_delete.length>0){
-                            console.log("deleting checked categories", categories_to_delete);
-                        }
-
-                        if(items_to_delete.length>0){
-                            console.log("deleting checked items:", items_to_delete);
-                        }
-                        
+                    }else{        
                         confirmDelete();
-                        
-                        setDeleteBtn(false); //to hide back the deleting checkboxes
+                        setDeleteBtn(false); 
                     }
                 }}
              />
@@ -233,25 +222,22 @@ const ManageInventoryScreen = () => {
                          }} 
                         />
 
-                        <Button
-                         title="Add"
-                         onPress={()=> handleAddItem()}
-                        />
+                        <Button title="Add" onPress={()=> handleAddItem()} />
                     </View>
-                    
                 </View>
             </View>  
         </Modal>
 
-        <SectionList //on click displays delete and update button on an item
-            sections={data}
+        <SectionList 
+            sections={
+                Array.from(data.entries()).map(([category,items])=>({
+                    title:category,
+                    data:Array.from(items),
+                }))
+            }
             keyExtractor={(item,index)=>item+index}
             renderItem={({item})=>(
-                <View 
-                    style={styles.item}
-                    flexDirection='row'
-                    justifyContent='space-between'
-                >
+                <View style={styles.item} flexDirection='row'justifyContent='space-between'>
                     <Text style={styles.item}>{item}</Text>
                     
                     {deleteBtn && <BouncyCheckbox
@@ -269,19 +255,10 @@ const ManageInventoryScreen = () => {
                         }}
                         
                     />}
-
-                    
-                     
                 </View>
-
             )} 
-
             renderSectionHeader={({section:{title}})=>(
-                <View 
-                    style={styles.sectionHeader}
-                    flexDirection='row'
-                    justifyContent='space-between'
-                >
+                <View style={styles.sectionHeader} flexDirection='row'justifyContent='space-between' >
                     <Text style={styles.sectionHeader}>{title}</Text>
                     
                     {deleteBtn && <BouncyCheckbox
@@ -300,13 +277,9 @@ const ManageInventoryScreen = () => {
                             console.log("categories to be deleted", categories_to_delete);
                         }}
                     />}
-                    
-                    
                 </View>
-                
             )}          
-        />
-            
+        />       
     </View>
     );
 };
