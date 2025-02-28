@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SectionList, Button } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
-import { useNavigation } from '@react-navigation/native';
-import inventoryData from '../data/inventoryData';
+import inventoryData from '../../data/inventoryData';
 
 const RestockingScreen = () => {
-  const navigation = useNavigation();
 
   const [requestBtn, setRequestBtn] = useState(false);
   const [itemsToRequest, setItemsToRequest] = useState([]);

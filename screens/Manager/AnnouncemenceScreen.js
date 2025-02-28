@@ -1,14 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet } from 'react-native';
 
 const AnnouncemenceScreen = () => {
-    const navigation = useNavigation();
 
     return (
     <View style={styles.container}>
         <Text style={styles.title}>Announcemence</Text>
-        <Text>Announcment made by manager will be shown here...</Text>
+        <Text>Manager can add or remove announcements to employees here..</Text>
         
     </View>
     );

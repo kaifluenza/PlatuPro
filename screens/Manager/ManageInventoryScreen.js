@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SectionList, Button, Modal,TextInput, Alert} from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
-import inventoryData from '../data/inventoryData';
+import inventoryData from '../../data/inventoryData';
 
 
 const ManageInventoryScreen = () => {
@@ -137,7 +137,7 @@ const ManageInventoryScreen = () => {
     
     return (
     <View style={styles.container}>
-        <Text style={styles.title}>Inventory</Text>
+        <Text style={styles.title}>Manage Inventory</Text>
         
         <View style={styles.horizontalStack}>
             <Button 
