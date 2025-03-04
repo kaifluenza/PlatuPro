@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SectionList, Button, Modal,TextInput, Alert} from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
-import inventoryData from '../../data/inventoryData';
-
+import { subscribeToServerInventory } from '../../data/inventoryData';
+import { getFirestore, doc, updateDoc } from 'firebase/firestore';
 
 const ManageInventoryScreen = () => {
 
-    const [data, setData] = useState(new Map(inventoryData));
+    const [data, setData] = useState(new Map());
+
+    useEffect(() => {
+        const unsubscribe = subscribeToServerInventory(setData);
+
+        return () => unsubscribe(); //clean up when unmounts
+    },[]); //run only on mount
+
+    useEffect(()=> {
+        setCategories([
+            ...Array.from(data.keys()).map((category)=>({label:category, value:category})),
+            {label:"New Category", value:"New Category"},
+        ]);
+    }, [data]); //runs whenever 'data'changes
+
     const [modalVisible, setModalVisible] = useState(false);
     const [newItem, setNewItem] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
@@ -22,12 +36,19 @@ const ManageInventoryScreen = () => {
     const [categories, setCategories] = useState(
         [  
             ...Array.from(data.keys()).map((category)=>({label:category, value:category})),
-            {label:"New Category", value:"New Category"}
+            {label:"New Category", value:"New Category"},
         ]
     );
 
-    const handleAddItem = () => {
-        //check if user has entered an item name
+    const handleAddItem = async () => {
+        //get reference to the server_inventory document 
+        const db = getFirestore();
+        const docRef = doc(db, "inventory", "server_inventory");
+        //create a copy of current inventory data
+        let updatedData = new Map(data);
+
+        //checks
+        //if user has entered an item name
         if(newItem.trim()===""){
             alert("You must provide the item name!");
             return;
@@ -38,30 +59,32 @@ const ManageInventoryScreen = () => {
             return;
         }
         
-        //user has selected category: create new category but dont name it
+        //user selected new category
         if(selectedCategory==="New Category"){
-            if(newCategory.trim()===""){
+            if(newCategory.trim()===""){ //forgot to name the new category
                 alert("You forgot to name the new category!");
                 return;
-            }else{ //user provided new category name 
-            // add new category and item to the Map
-            data.set(newCategory, new Set([newItem]));
-            setData(new Map(data)); //update with fresh map to trigger re-render
-
-            //update dropdown categories
-            setCategories([
-                ...Array.from(data.keys()).map((category)=>({label:category,value:category})),
-                {label:"New Category", value:"New Category"}
-            ]);  
             }
-        }else{ //user has selected existing category
-           if(data.has(selectedCategory)){
-                const categoryItems = data.get(selectedCategory); //get all the items from key 'selectedCtgry'
-                categoryItems.add(newItem); //add the new item to existing category
-                data.set(selectedCategory,categoryItems);
-                setData(new Map(data));
+            //user provided new category name; add new category and item to the Map
+            updatedData.set(newCategory, new Set([newItem]));
+
+        }else{ //user selected an existing category
+           if(updatedData.has(selectedCategory)){ //if category exists in the map
+            updatedData.get(selectedCategory).add(newItem); //add new item to the category's set
+           }else{ // selectedCtgry dont exist yet bc maybe local Map doesnt have the updated firestore data yet
+            updatedData.set(selectedCategory, new Set([newItem]));
            }
         }
+
+        //update local state!
+        setData(new Map(updatedData));
+
+        //write to Firestore!
+        const updatedFireStoreData = {};
+        updatedData.forEach((items, category)=>{
+            updatedFireStoreData[category] = Array.from(items); //convert Set to Array
+        });
+        await updateDoc(docRef, updatedFireStoreData);
           
         //reset modal fields
         setSelectedCategory("");
@@ -70,29 +93,35 @@ const ManageInventoryScreen = () => {
         setModalVisible(false);
     }
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
+        //get reference to the server_inventory document 
+        const db = getFirestore();
+        const docRef = doc(db, "inventory", "server_inventory");
+        //create a copy of current inventory data
+        let updatedData = new Map(data);
+
         //delete selected items 
         items_to_delete.forEach((item)=>{
-            data.forEach((items)=>{
+            updatedData.forEach((items)=>{
                 items.delete(item); //remove item from the map
             });
         });
 
         //delete selected categories 
         categories_to_delete.forEach((category)=>{
-            data.delete(category); //remove category from map
+            updatedData.delete(category); //remove category from map
         });
 
-        setData(new Map(data));  //update the data state, trigger re-render
+        setData(new Map(updatedData));  //update the data state, trigger re-render
 
-        console.log("categories: ", Array.from(data.keys()));
-        //update categories in dropdown 
-        setCategories([
-            ...Array.from(data.keys()).map((category)=>({label:category,value:category})),
-            {label:"New Category", value:"New Category"}
-        ]);
+        //write update to firestore
+        const updatedFireStoreData = {}; //initialize empty object
+        updatedData.forEach((items, category)=>{
+            updatedFireStoreData[category] = Array.from(items);  //convert set to array
+        });
+        await updateDoc(docRef, updatedFireStoreData);
 
-        //reset 
+        //reset deletion lists
         items_to_delete=[];
         categories_to_delete=[];
     }

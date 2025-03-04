@@ -1,8 +1,24 @@
-const inventoryData = new Map([
-    ["Soft Drinks", new Set(["Coke", "Diet Coke", "Coke Zero", "Sprite", "Sweet Tea", "Unsweetened Tea"])],
-    ["Beer", new Set(["Sapporo", "Singha"])],
-    ["Cleaning Supplies", new Set(["Hand Soap", "Windex", "Toilet Bowl Cleaner", "Disinfectant Spray", "Toilet Paper"])],
-    ["Misc.", new Set(["Dinner Napkins", "Silken Tofu"])]
-]);
+import { getFirestore, doc, onSnapshot } from "firebase/firestore";
 
-export default inventoryData;
+const subscribeToServerInventory = (setData) => {
+    const db = getFirestore();
+    const docRef = doc(db, "inventory", "server_inventory");
+
+    return onSnapshot(docRef, (docSnap) => {
+        if(docSnap.exists()){
+            const fetchedData = docSnap.data();
+            const dataMap = new Map();
+
+            Object.entries(fetchedData).forEach(([category, items]) => {
+                dataMap.set(category, new Set(items));
+            });
+
+            setData(dataMap); //real-time update state in ManageInventoryScreen
+        }else{
+            console.log("server_inventory doc doesn't exists.");
+            setData(new Map()); //reset data if document is deleted
+        }
+    });
+}
+
+export { subscribeToServerInventory };

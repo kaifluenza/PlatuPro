@@ -44,6 +44,18 @@ const SignInScreen = () => {
                 onPress={handleSignIn}
             />
 
+
+
+            <View style={styles.signup}>
+                <Button 
+                    color="gray"
+                    title="No Account? Sign Up"
+                    onPress={()=>{
+                        Alert.alert("In-app sign-up is coming soon. Please contact Kai for assistance.");
+                    }} 
+                />
+            </View>
+            
         </View>
     );
 };
@@ -73,7 +85,10 @@ const styles = StyleSheet.create({
     inputText:{
         height:40,
         color:"gray"
-    }
+    },
+    signup:{
+        margin:40,
+    },
 
 });
 

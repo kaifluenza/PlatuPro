@@ -96,7 +96,6 @@ const RestockingScreen = () => {
         )}
       </View>
 
-      <Text>Inventory</Text>
       <SectionList
         sections={sections}  // Use the transformed data
         keyExtractor={(item, index) => item + index}
@@ -124,7 +123,7 @@ const RestockingScreen = () => {
           </View>
         )}
         renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeader} flexDirection="row">
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionHeader}>{title}</Text>
           </View>
         )}

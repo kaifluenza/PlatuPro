@@ -2,13 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '@react-navigation/elements';
+import { getAuth, signOut } from 'firebase/auth';
 
 const EmployeeDashboardScreen = () => {
     const navigation = useNavigation();
+    const auth = getAuth();
 
     return (
     <View style={styles.container}>
-        <Text style={styles.title}>Platu Pro</Text>
         <Text style={styles.title}>Server Dashboard</Text>
 
         <Button 
@@ -20,6 +21,17 @@ const EmployeeDashboardScreen = () => {
         onPress={()=>navigation.navigate('Announcements')}>
             Announcements
        </Button>
+
+       <Button
+        onPress={()=>{
+            signOut(auth).then(()=>{
+                console.log("user signed out");
+            }).catch((error)=>{
+                console.log("error", error);
+            });
+        }}>
+            Sign Out
+        </Button>
 
         
     </View>
@@ -34,7 +46,7 @@ const styles = StyleSheet.create({
         gap:12,
     },
     title:{
-        marginTop:16,
+        margin:20,
         paddingVertical:8,
         color:'#FFF4E2',
         textAlign:'center',

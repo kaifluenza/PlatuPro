@@ -1,0 +1,1 @@
+//automatically assign manager role?
