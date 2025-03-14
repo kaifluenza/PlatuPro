@@ -1,53 +1,119 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SectionList, Button } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, SectionList, Button, Alert } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
-import inventoryData from '../../data/inventoryData';
+import { subscribeToServerInventory } from '../../data/inventoryData'; 
+import { subscribeToServerRequests } from '../../data/requestedData';
+import { getFirestore, doc, updateDoc} from 'firebase/firestore';
+import { useAuth } from '../../context/AuthContext';
 
 const RestockingScreen = () => {
+  const { restaurantId } = useAuth(); //get restaurantId from auth context
 
-  const [requestBtn, setRequestBtn] = useState(false);
-  const [itemsToRequest, setItemsToRequest] = useState([]);
-  let request_list = [];
+  //inventory data
+  const [inventory, setInventory] = useState(new Map());
+  useEffect(()=>{
+    if(restaurantId){
+      const unsubscribe = subscribeToServerInventory(restaurantId, setInventory);
+      return () => unsubscribe();
+    }
+  },[restaurantId]);
 
-  // Convert the Map to an array for SectionList
-  const sections = Array.from(inventoryData, ([title, items]) => ({
+  //supply requests data
+  const [requests, setRequests] = useState(new Map());
+  useEffect(()=>{
+    if(restaurantId){
+      const unsubscribe = subscribeToServerRequests(restaurantId, setRequests);
+      return () => unsubscribe();
+    }
+  },[restaurantId]);
+
+  // Convert Map to array for inventory SectionList
+  const sections = Array.from(inventory, ([title, items]) => ({
     title,
-    data: Array.from(items),  // Convert the Set to an array
+    data: Array.from(items), 
   }));
 
-  //convert itemsToRequest to a sectioned array for SectionList
-  const sectionedRequestList = itemsToRequest.reduce((acc,{category,item })=>{
-    //check if category already exists in accumulator
-    const existingSection = acc.find(section => section.title === category);
-    //if category exists, push item into the data array
-    if(existingSection){
-      existingSection.data.push(item);
-    }else{ //if category doesn't exist, create new section
-      acc.push({title:category, data:[item]});
+  //convert map to array for requests SectionLlist
+  const sectionedRequests = Array.from(requests,([title, items]) =>({
+    title,
+    data:Array.from(items),
+  }));
+  
+  const [requestBtn, setRequestBtn] = useState(false);
+  let request_list = [];
+
+
+  const handleSendRequest = async () => {
+    //get reference to doc
+    const db = getFirestore();
+    const docRef = doc(db, "restaurants", restaurantId, "supply_requests", "server_requests");
+
+    //create a copy of current request
+    let currentRequests = new Map(requests);
+    let repeatItems = [];
+    
+    //check if the items to be requested already exist in the current requests
+    request_list.forEach(({category,item})=>{
+      if(currentRequests.has(category) && currentRequests.get(category).has(item)){
+        repeatItems.push(item);
+        console.log("repeat item:", repeatItems);
+        return; 
+      }else{
+        if(!currentRequests.has(category)){
+          currentRequests.set(category, new Set());
+        }
+        currentRequests.get(category).add(item);
+      }
+    });
+
+    if(request_list.length==repeatItems.length){ //if request items are all repeats
+      console.log("No new request; no write to firestore!");
+      return;
     }
 
-    return acc;
-  },[]);
+    
+
+    //update local state
+    setRequests(new Map(currentRequests));
+
+    //write to firestore
+    const updatedFirestoreData = {};
+    currentRequests.forEach((items,category)=>{
+      updatedFirestoreData[category] = Array.from(items);
+    });
+    console.log("Data being sent to firestore:", updatedFirestoreData);
+    try{
+      await updateDoc(docRef, updatedFirestoreData);
+      console.log("Request stored in firstore.");
+    }catch(error){
+      console.log("Error writing supply request to firestore", error.message);
+    }
+
+
+    //reset fields
+    request_list=[]; //clear request list 
+    repeatItems=[];
+    setRequestBtn(false);  // Hide the buttons
+    
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Restocking List</Text>
-      <Text>*Update by Employee</Text>
 
       <View style={styles.requestBoard}>
-        <Text>Current Requested Items:</Text>
-        {itemsToRequest.length > 0 && (
-          <SectionList
-            sections={sectionedRequestList}
-            renderItem={({item})=> <Text>{item}</Text>}
-            renderSectionHeader={({section:{title}})=> (
-              <View>
-                <Text>{title}:</Text>
-              </View>
-            )}
-          />
-        )}
+        <SectionList
+          sections={sectionedRequests}
+          renderItem={({item})=><Text style={styles.requestBoardItem}>{item}</Text>}
+          renderSectionHeader={({section:{title}})=>(
+            <View>
+              <Text>{title}</Text>
+            </View>
+          )}
+        />
       </View>
+
+      <Text style={styles.title}>Inventory</Text>
 
       <View style={styles.horizontalStack}>
         
@@ -65,20 +131,8 @@ const RestockingScreen = () => {
             <Button
               title="Send"
               color="blue"
-              onPress={(isChecked) => {
-                console.log("sending request..", request_list);
-                // Send request logic here
-                console.log("current request list: ", request_list);
-                //filter out items that already exist in itemsToRequest
-                const filtered_request_list = request_list.filter((item)=>
-                  !itemsToRequest.some((i)=>i.item===item.item&&i.category===item.category)
-                );
-                console.log("filtered request list:", filtered_request_list);
-
-                
-                setItemsToRequest((prev)=>[...prev, ...filtered_request_list]);
-                console.log("itemsToReqeust: ", itemsToRequest);
-
+              onPress={() => {
+                handleSendRequest(); 
                 request_list=[];  //clear request list after requested
                 setRequestBtn(false);  // Hide the buttons
               }}
@@ -88,7 +142,7 @@ const RestockingScreen = () => {
               title="Cancel"
               color="blue"
               onPress={() => {
-                request_list=[]; //clear request list after requested
+                request_list=[]; //clear request list 
                 setRequestBtn(false);  // Hide the buttons
               }}
             />
@@ -110,13 +164,12 @@ const RestockingScreen = () => {
                 onPress={(isChecked) => {
                   if (isChecked) {
                     request_list.push({category:section.title, item:item});
-                    console.log("request list:" , request_list);
-                  } else {
+                  } else { //user deselect 
                     request_list = request_list.filter(
                       (array_item)=> array_item.item!==item || array_item.category !== section.title
                     );
-                    console.log("request list:" , request_list);
                   }
+                  console.log("request list:" , request_list);
                 }}
               />
             )}
@@ -150,13 +203,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: 'bold',
-    backgroundColor: '#3CC9CB',
+    backgroundColor: '#EDA441',
     borderRadius: 8,
     padding: 5,
   },
   item: {
     fontSize: 14,
-    backgroundColor: '#B4E6D4',
+    backgroundColor: '#f79881',
     borderRadius: 8,
     padding: 5,
     marginVertical: 4,
@@ -175,6 +228,10 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     justifyContent:"center",
     alignItems:"center",
+  },
+  requestBoardItem:{
+    fontWeight:"bold",
+    color:"white",
   },
 });
 

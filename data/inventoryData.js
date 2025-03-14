@@ -1,8 +1,10 @@
 import { getFirestore, doc, onSnapshot } from "firebase/firestore";
 
-const subscribeToServerInventory = (setData) => {
+const subscribeToServerInventory = (restaurantId, setData) => {
+    if(!restaurantId) return () => {}; //prevent running if restaurant is undefined
+    
     const db = getFirestore();
-    const docRef = doc(db, "inventory", "server_inventory");
+    const docRef = doc(db, `restaurants/${restaurantId}/inventory/server_inventory`);
 
     return onSnapshot(docRef, (docSnap) => {
         if(docSnap.exists()){

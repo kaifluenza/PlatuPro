@@ -7,9 +7,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "dev": "concurrently \"firebase emulators:start\" \"npm start\""
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-picker/picker": "^2.10.2",
     "@react-navigation/elements": "^2.2.5",
     "@react-navigation/native": "^7.0.13",
@@ -17,6 +19,8 @@
     "expo": "~52.0.7",
     "expo-status-bar": "~2.0.0",
     "firebase": "^11.3.1",
+    "firebase-admin": "^13.2.0",
+    "firebase-functions": "^6.3.2",
     "react": "18.3.1",
     "react-native": "0.76.2",
     "react-native-bouncy-checkbox": "^4.1.2",
@@ -28,6 +32,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
+  },
+  "engines": {
+    "node": "20"
   },
   "private": true
 }

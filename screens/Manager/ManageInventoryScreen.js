@@ -3,17 +3,20 @@ import { View, Text, StyleSheet, SectionList, Button, Modal,TextInput, Alert} fr
 import DropDownPicker from 'react-native-dropdown-picker';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
 import { subscribeToServerInventory } from '../../data/inventoryData';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, arrayRemove, deleteField } from 'firebase/firestore';
+import { useAuth } from '../../context/AuthContext';
 
 const ManageInventoryScreen = () => {
+    const { restaurantId } = useAuth();
 
+    //inventory data
     const [data, setData] = useState(new Map());
-
     useEffect(() => {
-        const unsubscribe = subscribeToServerInventory(setData);
-
-        return () => unsubscribe(); //clean up when unmounts
-    },[]); //run only on mount
+        if(restaurantId){
+            const unsubscribe = subscribeToServerInventory(restaurantId, setData);
+            return () => unsubscribe(); //clean up when unmounts
+        }
+    },[restaurantId]); //run only on mount
 
     useEffect(()=> {
         setCategories([
@@ -43,48 +46,64 @@ const ManageInventoryScreen = () => {
     const handleAddItem = async () => {
         //get reference to the server_inventory document 
         const db = getFirestore();
-        const docRef = doc(db, "inventory", "server_inventory");
+        const docRef = doc(db, "restaurants", restaurantId, "inventory", "server_inventory");
         //create a copy of current inventory data
         let updatedData = new Map(data);
 
         //checks
-        //if user has entered an item name
+        //if user forgot item name
         if(newItem.trim()===""){
             alert("You must provide the item name!");
             return;
         }
-        //user added item, but does not select category
+        //if user forgot to provide category name
         if(selectedCategory===""){
             alert("You must assign a category to the item!")
             return;
         }
-        
-        //user selected new category
+
+        let categoryToUse = selectedCategory;
+
+        //if user selectd new category but forgot to give name
         if(selectedCategory==="New Category"){
             if(newCategory.trim()===""){ //forgot to name the new category
                 alert("You forgot to name the new category!");
                 return;
             }
-            //user provided new category name; add new category and item to the Map
-            updatedData.set(newCategory, new Set([newItem]));
-
-        }else{ //user selected an existing category
-           if(updatedData.has(selectedCategory)){ //if category exists in the map
-            updatedData.get(selectedCategory).add(newItem); //add new item to the category's set
-           }else{ // selectedCtgry dont exist yet bc maybe local Map doesnt have the updated firestore data yet
-            updatedData.set(selectedCategory, new Set([newItem]));
-           }
+            //when user provided name for the new category
+            categoryToUse = newCategory;
         }
+
+        //check if item already exists in the category
+        if(updatedData.has(categoryToUse) && updatedData.get(categoryToUse).has(newItem)){
+            Alert.alert(`${newItem} already exists in ${categoryToUse}!`);
+            return;
+        }
+        //otherwise we go ahead and add the new item to the category
+        //if new item is for new category
+        if(!updatedData.has(categoryToUse)){
+            updatedData.set(categoryToUse, new Set()); //create an empty Set first
+        }
+        //then go ahead and add the item
+        updatedData.get(categoryToUse).add(newItem);
 
         //update local state!
         setData(new Map(updatedData));
 
+        
         //write to Firestore!
         const updatedFireStoreData = {};
         updatedData.forEach((items, category)=>{
             updatedFireStoreData[category] = Array.from(items); //convert Set to Array
         });
-        await updateDoc(docRef, updatedFireStoreData);
+        console.log("data being sent to firestore:", updatedFireStoreData);
+        try{
+            await updateDoc(docRef, updatedFireStoreData);
+            console.log("Firestore updated. Item(s) added.");
+        }catch(error){
+            console.log("Error updating firestore", error.message);
+        }
+            
           
         //reset modal fields
         setSelectedCategory("");
@@ -93,33 +112,54 @@ const ManageInventoryScreen = () => {
         setModalVisible(false);
     }
 
-    const handleDelete = async () => {
-        //get reference to the server_inventory document 
-        const db = getFirestore();
-        const docRef = doc(db, "inventory", "server_inventory");
+    const handleDelete = async (items_to_delete, categories_to_delete) => {
         //create a copy of current inventory data
         let updatedData = new Map(data);
 
+        //get reference to the server_inventory document 
+        const db = getFirestore();
+        const docRef = doc(db, "restaurants", restaurantId, "inventory", "server_inventory");
+        
+        //check before accessing firestore
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            console.error("❌ Error: server_inventory document does not exist. Create it first.");
+            return;
+        }
+        console.log("Current firstore document:", docSnap.data());
+
+
         //delete selected items 
-        items_to_delete.forEach((item)=>{
-            updatedData.forEach((items)=>{
-                items.delete(item); //remove item from the map
-            });
+        items_to_delete.forEach(async ({category, item}) => {
+            if(updatedData.has(category)){
+                updatedData.get(category).delete(item);
+                console.log(`UI: Deleted ${item} from ${category}`);
+                //update firestore
+                try{
+                    await updateDoc(docRef, {
+                        [`${category}`]:arrayRemove(item)
+                    });
+                }catch(error){
+                    console.log(`Error deleteing ${item} in firestore: `, error.message);
+                }
+            }
         });
 
         //delete selected categories 
-        categories_to_delete.forEach((category)=>{
+        categories_to_delete.forEach(async (category) => {
             updatedData.delete(category); //remove category from map
+            console.log(`UI: Deleted category ${category} and its items.`);
+            try{
+                await updateDoc(docRef, {
+                    [`${category}`]:deleteField()
+                });
+            }catch(error){
+                console.log(`Error deleting category ${category} in firestore: `, error.message);
+            }
         });
 
-        setData(new Map(updatedData));  //update the data state, trigger re-render
-
-        //write update to firestore
-        const updatedFireStoreData = {}; //initialize empty object
-        updatedData.forEach((items, category)=>{
-            updatedFireStoreData[category] = Array.from(items);  //convert set to array
-        });
-        await updateDoc(docRef, updatedFireStoreData);
+        //update the data state, trigger re-render
+        setData(new Map(updatedData));  
 
         //reset deletion lists
         items_to_delete=[];
@@ -127,10 +167,10 @@ const ManageInventoryScreen = () => {
     }
 
     const confirmDelete = () => {
-        const categoryText = categories_to_delete.length>0? `Category: ${categories_to_delete.join(", ")}` : "";
-        const itemText = items_to_delete.length>0? `Item: ${items_to_delete.join(", ")}` : "";
+        const categoryText = categories_to_delete.length>0? `\nCategory:\n${categories_to_delete.join(", ")}\n**Items in the category will also be deleted**` : "";
+        const itemText = items_to_delete.length>0? `Item:\n ${items_to_delete.map(i=>i.item).join(", ")}` : "";
 
-        const message = `${categoryText}\n${itemText}`.trim();
+        const message = `${itemText}\n${categoryText}`.trim();
 
         Alert.alert(
         "Confirm Deletion", 
@@ -151,7 +191,7 @@ const ManageInventoryScreen = () => {
                 style: "destructive",
                 onPress: () => {
                     console.log("user confirmed deletion");
-                    handleDelete();
+                    handleDelete(items_to_delete,categories_to_delete);
                 },
             },
         ])
@@ -181,14 +221,14 @@ const ManageInventoryScreen = () => {
                 onPress={()=> {
                     if(!deleteBtn){
                         setDeleteBtn(true)
-                    }else{        
-                        confirmDelete();
+                    }else{  
+                        if(items_to_delete.length>0 || categories_to_delete.length>0){
+                            confirmDelete();
+                        }      
                         setDeleteBtn(false); 
                     }
                 }}
              />
-
-             {console.log("delete button state: ", deleteBtn)}
 
              {deleteBtn && <Button
                 title="Cancel"
@@ -265,7 +305,7 @@ const ManageInventoryScreen = () => {
                 }))
             }
             keyExtractor={(item,index)=>item+index}
-            renderItem={({item})=>(
+            renderItem={({item,section})=>(
                 <View style={styles.item} flexDirection='row'justifyContent='space-between'>
                     <Text style={styles.item}>{item}</Text>
                     
@@ -275,9 +315,9 @@ const ManageInventoryScreen = () => {
                         size={20}
                         onPress={(isChecked)=>{
                             if(isChecked){
-                                items_to_delete.push(item);
+                                items_to_delete.push({category:section.title, item:item});
                             }else{ //user deselect the item
-                                items_to_delete = items_to_delete.filter((arrayItem)=>arrayItem!==item);
+                                items_to_delete = items_to_delete.filter((i) => i.item !== item || i.category !== section.title);
                             }
                             
                             console.log("items to be deleted", items_to_delete);

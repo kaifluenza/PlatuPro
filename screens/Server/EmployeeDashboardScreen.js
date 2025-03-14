@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '@react-navigation/elements';
-import { getAuth, signOut } from 'firebase/auth';
+import { useAuth } from '../../context/AuthContext';
 
 const EmployeeDashboardScreen = () => {
     const navigation = useNavigation();
-    const auth = getAuth();
+    const { logout } = useAuth();
 
     return (
     <View style={styles.container}>
@@ -22,16 +22,9 @@ const EmployeeDashboardScreen = () => {
             Announcements
        </Button>
 
-       <Button
-        onPress={()=>{
-            signOut(auth).then(()=>{
-                console.log("user signed out");
-            }).catch((error)=>{
-                console.log("error", error);
-            });
-        }}>
-            Sign Out
-        </Button>
+       <TouchableOpacity onPress={logout}>
+            <Text>Sign Out</Text>
+        </TouchableOpacity>
 
         
     </View>

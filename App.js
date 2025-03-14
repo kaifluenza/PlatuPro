@@ -2,9 +2,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-
 import SignInScreen from "./screens/Authentication/SignInScreen";
+import SignUpScreen from './screens/Authentication/SignUpScreen';
+import SplashScreen from './screens/Authentication/SplashScreen';
 import HomeScreen from './screens/Manager/HomeScreen';
 import ManageInventoryScreen from './screens/Manager/ManageInventoryScreen';
 import ManageEmployeeScreen from './screens/Manager/ManageEmployeeScreen';
@@ -13,6 +13,7 @@ import AnnouncemenceScreen from './screens/Manager/AnnouncemenceScreen';
 import EmployeeDashboardScreen from './screens/Server/EmployeeDashboardScreen';
 import RestockingScreen from './screens/Server/RestockingScreen';
 import AnnouncementBoardScreen from './screens/Server/AnnouncementBoardScreen';
+import AssistantHomeScreen from './screens/AssistantManager/AssistantHomeScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,11 +26,18 @@ function RootStack(){
       {user ? (
         role === "manager" ? (
           <>
-           <Stack.Screen name="Home" component={HomeScreen}/>
-           <Stack.Screen name='Inventory' component={ManageInventoryScreen}/>
+            <Stack.Screen name="Home" component={HomeScreen}/>
+            <Stack.Screen name='Inventory' component={ManageInventoryScreen}/>
             <Stack.Screen name='Requests' component={RequestScreen}/>
             <Stack.Screen name='Announcemence' component={AnnouncemenceScreen}/>
             <Stack.Screen name='Employee' component={ManageEmployeeScreen}/>
+          </>
+          ) : role === "assistant_manager" ? (
+          <>
+            <Stack.Screen name="Home" component={AssistantHomeScreen}/>
+            <Stack.Screen name='Inventory' component={ManageInventoryScreen}/>
+            <Stack.Screen name='Requests' component={RequestScreen}/>
+            <Stack.Screen name='Announcemence' component={AnnouncemenceScreen}/>
           </>
           ) : (
           <>
@@ -42,6 +50,7 @@ function RootStack(){
         <>
           <Stack.Screen name='SignIn' component={SignInScreen} />
           <Stack.Screen name='SignUp' component={SignUpScreen} />
+          <Stack.Screen name='SplashScreen' component={SplashScreen}/>
         </>
       )}
     </Stack.Navigator>
@@ -58,7 +67,3 @@ export default function App(){
   );
 }
 
-
-function SignUpScreen() {
-  return <View />
-}

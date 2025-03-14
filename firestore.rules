@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // USERS COLLECTION - Managers can create and delete users, but not delete themselves
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow all users to create their own document
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      //  Managers can update user roles (but NOT their own or other managers)
+      //  First-time users with "pending" role can update themselves to "manager"
+      // Managers can update their own document but NOT their role
+      allow update: if request.auth != null &&
+                    request.auth.token.restaurantId == request.resource.data.restaurantId &&
+                    (
+                      (request.auth.token.role == "manager" && request.auth.uid != userId) || //  Managers can update others
+                      (request.auth.uid == userId && (
+                          resource.data.role == "pending" || // Allow "pending" → "manager"
+                          request.resource.data.role == "manager" || // Allow managers to update their own document after role update
+                          !(request.resource.data.role in ["server", "assistant_manager", "manager"]) //  Managers can edit their profile, but not role
+                      ))
+                    );
+
+      // Managers can delete 'server' or 'assistant_manager' users (but not themselves)
+      allow delete: if request.auth != null &&
+                    request.auth.token.role == "manager" &&
+                    request.auth.uid != userId &&
+                    request.auth.token.restaurantId == request.resource.data.restaurantId &&
+                    request.resource.data.role in ["server", "assistant_manager"];
+    }
+
+    // RESTAURANTS COLLECTION - Allow First-Time Users to Create Their Own Restaurant
+    match /restaurants/{restaurantId} {
+      // Only first-time users (pending managers) can create a restaurant
+      allow create: if request.auth != null && request.auth.uid == restaurantId;
+
+      // Allow "pending" users to create subcollections before role update
+      match /inventory/{docId} {
+        allow create: if request.auth != null &&
+                      (request.auth.uid == restaurantId || request.auth.token.role == "pending");
+      }
+
+    match /supply_requests/{docId} {
+    	allow create: if request.auth != null &&
+                      (request.auth.uid == restaurantId || request.auth.token.role == "pending");
+		}
+
+
+      match /posts/{docId} {
+        allow create: if request.auth != null &&
+                      (request.auth.uid == restaurantId || request.auth.token.role == "pending");
+      }
+
+      // INVENTORY - Managers & Assistant Managers Can Modify
+      match /inventory/{docId} {
+        allow read: if request.auth != null && request.auth.token.restaurantId == restaurantId;
+        allow write, delete: if request.auth != null &&
+                             request.auth.token.role in ["manager", "assistant_manager"] &&
+                             request.auth.token.restaurantId == restaurantId;
+      }
+
+      // SUPPLY REQUESTS - Servers Submit, Managers & Assistants Manage
+      match /supply_requests/{docId} {
+        allow read: if request.auth != null && request.auth.token.restaurantId == restaurantId;
+        allow write: if request.auth != null &&
+                     request.auth.token.role == "server" &&
+                     request.auth.token.restaurantId == restaurantId &&
+                     request.resource.data.restaurantId == request.auth.token.restaurantId;
+        allow delete: if request.auth != null &&
+                      request.auth.token.role in ["manager", "assistant_manager"] &&
+                      request.auth.token.restaurantId == request.resource.data.restaurantId;
+      }
+
+      // POSTS - Managers & Assistant Managers Create/Delete, Everyone Can Comment
+      match /posts/{postId} {
+        allow read: if request.auth != null && request.auth.token.restaurantId == restaurantId;
+
+        //  Managers can create & delete any post
+        allow write, delete: if request.auth != null &&
+                              request.auth.token.role == "manager" &&
+                              request.auth.token.restaurantId == restaurantId;
+
+        //  Assistant managers can create and edit their own posts
+        allow create, update: if request.auth != null &&
+                              request.auth.token.role == "assistant_manager" &&
+                              request.auth.token.restaurantId == restaurantId &&
+                              request.auth.uid == resource.data.userId;
+
+        // Assistant managers can only delete their own posts
+        allow delete: if request.auth != null &&
+                      request.auth.token.role == "assistant_manager" &&
+                      request.auth.token.restaurantId == restaurantId &&
+                      request.auth.uid == resource.data.userId;
+
+        // Comments - Everyone Can Write, Moderation Applied
+        match /comments/{commentId} {
+          allow create: if request.auth != null && request.auth.token.restaurantId == restaurantId;
+
+          //  Users can update or delete their own comments
+          allow update, delete: if request.auth != null &&
+                                request.auth.token.restaurantId == request.resource.data.restaurantId &&
+                                (
+                                    request.auth.token.role == "manager" || //  Managers can delete any comment
+                                    (request.auth.token.role == "assistant_manager" && resource.data.role == "server") || //  Assistant managers can delete server comments
+                                    request.auth.uid == resource.data.userId //  Users can delete their own comments
+                                );
+        }
+      }
+    }
+  }
+}
