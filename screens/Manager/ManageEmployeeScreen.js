@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, FlatList} from 'react-native';
+import { MaterialIcons } from "@expo/vector-icons";
+import { ActivityIndicator } from "react-native";
 import DropDownPicker from 'react-native-dropdown-picker';
 import { subscribeToEmployeeData } from "../../data/employeeData";
 import { useAuth } from "../../context/AuthContext";  
@@ -27,10 +29,12 @@ const ManageEmployeeScreen = () => {
     const [email, setEmail] = useState("");
     const [role, setRole] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [emailError, setEmailError] = useState(""); //track error message
+    const [loading, setLoading] = useState(false);
 
     //for deleting employee
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
     
-
     //for dropdown picker
     const [open, setOpen] = useState(false); 
     const [items, setItems] = useState([
@@ -38,8 +42,6 @@ const ManageEmployeeScreen = () => {
         {label:"Assistant Manager", value:"assistant_manager"}
     ]);
 
-    const [emailError, setEmailError] = useState(""); //track error message
-    
     //function to add employee
     const handleAddEmployee = async () => {
         //input validation
@@ -55,6 +57,8 @@ const ManageEmployeeScreen = () => {
         }else{
             setEmailError(""); //clear error if valid
         }
+
+        
 
         //DEBUG
         const auth = getAuth();
@@ -83,6 +87,8 @@ const ManageEmployeeScreen = () => {
         const setUserRole = httpsCallable(getFunctions(), "setUserRole");
 
         try{
+            setLoading(true);
+
             //call createEmployee to create the user
             const result = await createEmployee({ name, email, role, restaurantId });
 
@@ -115,8 +121,14 @@ const ManageEmployeeScreen = () => {
             setEmail("");
             setRole(null);
             setModalVisible(false);
+            setLoading(false);
         }
     }
+
+    //helper function for deleting employee
+    const handleCardPress = (empolyeeId) => {
+        setSelectedEmployeeId(selectedEmployeeId === empolyeeId ? null : empolyeeId); //toggle selection
+    };
 
     //convert employees map into flatlist-friendly array
     const processEmployeeData = (employees) => {
@@ -126,13 +138,99 @@ const ManageEmployeeScreen = () => {
         }))
     };
 
-    const renderEmployeeCard = ({item}) => (
-        <View style={styles.employeeCard}>
-            <Text style={styles.employeeName}>{item.name}</Text>
-            <Text style={styles.employeeEmail}>{item.email}</Text>
-        </View>
-    );
+    //function for render card
+    const renderEmployeeCard = ({ item }) => {
+        return (
+            <TouchableOpacity
+                style={styles.employeeCard}
+                onPress={() => handleCardPress(item.id)}
+                activeOpacity={0.8}
+            >
+                <View style={styles.cardContent}>
+                    {/* Left Side: Employee Info */}
+                    <View>
+                        <Text style={styles.employeeName}>{item.name}</Text>
+                        <Text style={styles.employeeEmail}>{item.email}</Text>
+                    </View>
     
+                    {/* Right Side: Show delete button ONLY for selected card */}
+                    {selectedEmployeeId === item.id && (
+                        <TouchableOpacity onPress={() => handleDeleteEmployee(item)} style={styles.deleteButton}>
+                            <MaterialIcons name="delete" size={28} color="red" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
+    
+
+
+    //function to delete employee
+    const handleDeleteEmployee = async (employee) => {
+        Alert.alert(
+            "Confirm Deletion",
+            `Are you sure you want to remove ${employee.name}'s account?`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        // Check authentication
+                        const auth = getAuth();
+                        const user = auth.currentUser;
+                        if (!user) {
+                            console.error("❌ No authenticated user found.");
+                            Alert.alert("Error", "You must be logged in to remove an employee.");
+                            return;
+                        }
+                        // Check manager role
+                        const tokenResult = await user.getIdTokenResult();
+                        if (tokenResult.claims.role !== "manager") {
+                            console.error("❌ Unauthorized: Only managers can remove employees.");
+                            Alert.alert("Error", "You do not have permission to remove employees.");
+                            return;
+                        }
+                        // Get token for backend verification
+                        const token = await user.getIdToken();
+                        
+                        console.log(`Deleting employee: ${employee.name}..\n(Employee ID: ${employee.id})`);
+                        const deleteEmployee = httpsCallable(getFunctions(), "deleteEmployee");
+    
+                        try {
+                            // Call deleteEmployee function
+                            const result = await deleteEmployee({ 
+                                employeeId: employee.id, 
+                                restaurantId, 
+                                token 
+                            });
+    
+                            if (!result.data?.success) {
+                                throw new Error(result.data?.error || "❌ Employee deletion failed.");
+                            }
+                            console.log("✅ Employee deleted successfully.");
+                            Alert.alert("✅ Success", `${employee.name} has been removed.`);
+    
+                            // Update UI: Remove employee from state
+                            setEmployees((prevEmployees) => {
+                                const updatedMap = new Map(prevEmployees);
+                                for (const [role, employeeList] of updatedMap) {
+                                    updatedMap.set(role, employeeList.filter(emp => emp.id !== employee.id));
+                                }
+                                return updatedMap;
+                            });
+    
+                            setSelectedEmployeeId(null); // Hide delete button after deletion
+                        } catch (error) {
+                            console.error("❌ Error deleting employee:", error);
+                            Alert.alert("❌ Error", error.message || "Failed to remove employee.");
+                        }
+                    },
+                },
+            ]
+        );
+    };
     
     
 
@@ -224,7 +322,11 @@ const ManageEmployeeScreen = () => {
                     />
                     
                     <TouchableOpacity onPress={()=>handleAddEmployee()} style={styles.modalButton}>
-                        <Text style={styles.buttonText}>Create Account</Text>
+                        { loading ? (
+                            <ActivityIndicator size="small" color="blue" />
+                        ) : (
+                            <Text style={styles.buttonText}>Create Account</Text>
+                        )}
                     </TouchableOpacity>
 
                     <TouchableOpacity 
@@ -345,7 +447,6 @@ const styles = StyleSheet.create({
     employeeCard:{
         backgroundColor: "#FFF",
         padding: 15,
-        paddingHorizontal: 50,
         borderRadius: 10,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -355,19 +456,25 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         alignItems: "center",
     },
+    cardContent: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal:10,
+        gap:20,
+    },
     employeeName: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: "bold",
         color: "#333",
     },
     employeeEmail: {
-        fontSize: 14,
+        fontSize: 16,
         color: "#555",
     },
     roleContainer: {
         width: "100%",
         marginBottom: 10,
-        paddingHorizontal: 30,
     },
     roleTitle: {
         fontSize: 20,

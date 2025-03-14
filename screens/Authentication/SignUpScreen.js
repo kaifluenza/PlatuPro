@@ -1,5 +1,7 @@
 //automatically assign manager role?
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Touchable, Alert  } from "react-native";
+import { 
+    StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, ScrollView, Platform, TouchableWithoutFeedback, Keyboard
+} from "react-native";
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { auth } from "../../firebase";
@@ -155,102 +157,133 @@ const SignUpScreen = () => {
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Sign Up</Text>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS==="ios" ? "padding" : "height"}
+            style={styles.container}
+        >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.innerContainer}>
+                    <Text style={styles.title}>Sign Up</Text>
 
-            <View style={{flexDirection:'row'}}>
-                <Text style={styles.subTitle}>Create an account or </Text> 
-                <TouchableOpacity onPress={()=> navigation.navigate('SignIn')}>
-                    <Text style={styles.subTitle2}>Sign In</Text>
-                </TouchableOpacity>
-            </View>
+                    <View style={styles.row}>
+                        <Text style={styles.subTitle}>Create an account or </Text> 
 
-            <View style={styles.inputBox}>
-                <TextInput
-                    style={styles.inputText}
-                    placeholder="Name"
-                    value={name}
-                    onChangeText={(text)=>setName(text)}
-                />
-            </View>
+                        <TouchableOpacity onPress={()=> navigation.navigate('SignIn')}>
+                            <Text style={styles.subTitle2}>Sign In</Text>
+                        </TouchableOpacity>
+                    </View>
 
-            <View style={styles.inputBox}>
-                <TextInput
-                    style={styles.inputText}
-                    placeholder="Restaurant Name"
-                    value={resName}
-                    onChangeText={(text)=>setResName(text)}
-                />
-            </View>
+                    <View style={styles.inputBox}>
+                        <TextInput
+                            style={styles.inputText}
+                            placeholder="Name"
+                            value={name}
+                            onChangeText={(text)=>setName(text)}
+                            autoCapitalize="words"
+                        />
+                    </View>
 
-            <View style={styles.inputBox}>
-                <TextInput
-                    style={styles.inputText}
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={(text)=>setEmail(text)}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
-            </View>
+                    <View style={styles.inputBox}>
+                        <TextInput
+                        style={styles.inputText}
+                        placeholder="Restaurant Name"
+                        value={resName}
+                        onChangeText={(text)=>setResName(text)}
+                    />
+                    </View>
 
-            <View style={styles.inputBox}>
-                <TextInput
-                    style={styles.inputText}
-                    placeholder="Password"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={(text)=>setPassword(text)}
-                />
-            </View>
+                    <View style={styles.inputBox}>
+                        <TextInput
+                            style={styles.inputText}
+                            placeholder="Email"
+                            value={email}
+                            onChangeText={(text)=>setEmail(text)}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                    </View>
 
-            
-            <TouchableOpacity style={styles.signUpBtn} onPress={()=>handleSignUp()}>
-                <Text style={styles.signUpBtnText}>Sign Up</Text>
-            </TouchableOpacity>
-            
-            
-            
-        </View>
+                    <View style={styles.inputBox}>
+                        <TextInput
+                            style={styles.inputText}
+                            placeholder="Password"
+                            secureTextEntry
+                            value={password}
+                            onChangeText={(text)=>setPassword(text)}
+                        />
+                    </View>
+
+
+                    <View style={{padding:20}}>
+                        <TouchableOpacity style={styles.signUpBtn} onPress={()=>handleSignUp()}>
+                            <Text style={styles.signUpBtnText}>Sign Up</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </View>
+              </ScrollView>
+            </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
     container:{
-        flex:0.75,
-        //backGroundColor:"#fac596",
+        flex:1,
+        backgroundColor: "#FAC590",
+    },
+    scrollContainer:{
+        flexGrow:1,
+        justifyContent:"center",
+        alignItems:"center",
+        padding:20,
+        paddingBottom:50,
+    },
+    innerContainer:{
+        width:"100%",
         alignItems:"center",
         justifyContent:"center",
     },
+    row:{
+        flexDirection:"row",
+        marginBottom:20,
+    },
     title:{
         fontWeight:"bold",
-        fontSize:30,
+        fontSize:35,
         color:"#676666",
         marginBottom:20,
     },
     subTitle:{
-        fontWeight:"300",
         fontSize:18,
+        fontWeight:"400",
         color:"#676666",
-        marginBottom:20,
     },
     subTitle2:{
-        fontWeight:"300",
+        fontWeight:"500",
         fontSize:18,
         color:"#EE744F",
-        marginBottom:20,
+        marginBottom:10,
+        textDecorationLine:"underline",
     },
     inputBox:{
-        width:"80%",
+        width:"85%",
         height:50,
-        borderRadius:25,
-        marginBottom:10,
+        backgroundColor: "#FCE2C7",
+        borderRadius:15,
+        borderWidth: 1,
+        borderColor: "#E3B590",
+        paddingHorizontal: 15,
+        marginBottom:15,
         justifyContent:"center",
-        padding:20,
+        elevation: 2, // Subtle shadow for input box
     },
     inputText:{
         height:40,
-        color:"gray"
+        color:"gray",
+        fontSize: 16,
+        color: "#5A5A5A",
     },
     signUpBtn:{
         backgroundColor:"#FD9E81",

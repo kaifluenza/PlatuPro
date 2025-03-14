@@ -34,7 +34,7 @@ const validateUserData = (data, requiredFields) => {
 
 
 // Function to set user role (custom claims)
-exports.setUserRole = functions.https.onCall(async (data, context) => {
+exports.setUserRole = functions.https.onCall(async (data) => {
     console.log("Recieved request in setUserRole", data);
 
     //validate required fields (except token since new user wont have one)
@@ -146,4 +146,60 @@ exports.createEmployee = functions.https.onCall(async (data) => {
         throw new functions.https.HttpsError("internal", "Error creating employee.", error);
     }
 
+});
+
+
+// Function to delete an employee
+exports.deleteEmployee = functions.https.onCall(async (data) => {
+    console.log("📩 Received request in deleteEmployee:", data);
+
+    const { employeeId, restaurantId, token } = validateUserData(data, ["employeeId", "restaurantId", "token"]);
+
+    try {
+        // Verify manager's identity
+        let decodedToken;
+        try {
+            decodedToken = await admin.auth().verifyIdToken(token);
+            console.log("✅ Token verified:", decodedToken);
+        } catch (error) {
+            console.error("❌ Error verifying token:", error);
+            throw new functions.https.HttpsError("unauthenticated", "Invalid authentication token.");
+        }
+        if (decodedToken.role !== "manager" || decodedToken.restaurantId !== restaurantId) {
+            console.error("❌ Unauthorized: Only managers can delete employees.");
+            throw new functions.https.HttpsError("permission-denied", "Only managers can delete employees.");
+        }
+
+        // Check if employee exists
+        const employeeRef = db.collection("users").doc(employeeId);
+        const employeeDoc = await employeeRef.get();
+
+        if (!employeeDoc.exists) {
+            throw new functions.https.HttpsError("not-found", "Employee not found.");
+        }
+
+        const employeeData = employeeDoc.data();
+
+        // Prevent managers from deleting other managers
+        if (employeeData.role === "manager") {
+            throw new functions.https.HttpsError("permission-denied", "Managers cannot delete other managers.");
+        } //or themselves
+        if(decodedToken.uid === employeeId){
+            console.error("❌ Unauthorized: Managers cannot delete themselves.");
+            throw new functions.https.HttpsError("permission-denied", "Managers cannot delete themselves.");
+        }
+
+        // Remove employee from Firestore
+        await employeeRef.delete();
+        console.log(`✅ Employee ${employeeId} removed from Firestore.`);
+
+        // Delete the user from Firebase Authentication
+        await admin.auth().deleteUser(employeeId);
+        console.log(`✅ Employee ${employeeId} removed from Firebase Authentication.`);
+
+        return { success: true, message: "Employee successfully deleted." };
+    } catch (error) {
+        console.error("❌ Error deleting employee:", error);
+        throw new functions.https.HttpsError("internal", "Failed to delete employee.", error);
+    }
 });

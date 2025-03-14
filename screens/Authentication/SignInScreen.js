@@ -75,15 +75,15 @@ const SignInScreen = () => {
                 />
             </View>
 
-            <TouchableOpacity onPress={()=>handleSignIn()} style={styles.signInBtn} disabled={loading}>
-                { loading ? (
-                    <ActivityIndicator size="small" color="#3E3C3B"/>
-                ) : (
-                    <Text style={styles.signInBtnText}>Sign In</Text>
-                )}
-            </TouchableOpacity>
-
-
+            <View style={{padding:20}}>
+                <TouchableOpacity onPress={()=>handleSignIn()} style={styles.signInBtn} disabled={loading}>
+                    { loading ? (
+                        <ActivityIndicator size="small" color="#3E3C3B"/>
+                    ) : (
+                        <Text style={styles.signInBtnText}>Sign In</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
 
             <View style={styles.signup}>
                 <Text style={styles.signUpText}>No Account? </Text> 
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     title:{
         fontWeight:"bold",
         fontSize:40,
-        color:"#676666",
+        color: "#F9F3EE",
         marginBottom:40,
     },
     inputBox:{
@@ -116,13 +116,18 @@ const styles = StyleSheet.create({
         marginBottom:20,
         justifyContent:"center",
         padding:20,
+        borderRadius: 12, // Rounded corners for smooth feel
+        borderWidth: 1.5, // Subtle border
+        borderColor: "#E3B590", // Soft pastel border (slightly darker than background)
+        backgroundColor: "#fce2c7", // Soft pastel background (lighter than screen)
     },
     inputText:{
         height:40,
-        color:"gray"
+        color: "#5A5A5A", // Darker gray for better contrast
+        fontSize: 16,
     },
     signInBtn:{
-        backgroundColor:"#FEC15D",
+        backgroundColor:"#D47F42",
         padding:10,
         borderRadius:8,
     },
