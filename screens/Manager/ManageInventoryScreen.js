@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, Button, Modal,TextInput, Alert} from 'react-native';
+import { View, Text, StyleSheet, SectionList, Button, Modal,TextInput, Alert, SafeAreaView, TouchableOpacity, Keyboard} from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
 import { subscribeToServerInventory } from '../../data/inventoryData';
 import { getFirestore, doc, getDoc, updateDoc, arrayRemove, deleteField } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const ManageInventoryScreen = () => {
     const { restaurantId } = useAuth();
@@ -167,7 +168,7 @@ const ManageInventoryScreen = () => {
     }
 
     const confirmDelete = () => {
-        const categoryText = categories_to_delete.length>0? `\nCategory:\n${categories_to_delete.join(", ")}\n**Items in the category will also be deleted**` : "";
+        const categoryText = categories_to_delete.length>0? `\nCategory:\n${categories_to_delete.join(", ")}\n**All items in the category will also be deleted**` : "";
         const itemText = items_to_delete.length>0? `Item:\n ${items_to_delete.map(i=>i.item).join(", ")}` : "";
 
         const message = `${itemText}\n${categoryText}`.trim();
@@ -205,213 +206,244 @@ const ManageInventoryScreen = () => {
 
     
     return (
-    <View style={styles.container}>
-        <Text style={styles.title}>Manage Inventory</Text>
+    <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+            <Text style={styles.title}>Manage Inventory</Text>
         
-        <View style={styles.horizontalStack}>
-            <Button 
-                title="Add Item"
-                color="white"
-                onPress={()=> setModalVisible(true)}
-            />
+            <View style={styles.horizontalStack}>
+                <TouchableOpacity style={[styles.button, {flexDirection:"row"}, {alignItems:"center"}]} onPress={()=> setModalVisible(true)}>
+                    <Ionicons name="add" size={24} color="white" />
+                    <Text style={styles.buttonText}>Add Item</Text>
+                </TouchableOpacity>
 
-            <Button
-                title="Delete"
-                color="#FA302D"
-                onPress={()=> {
-                    if(!deleteBtn){
-                        setDeleteBtn(true)
-                    }else{  
-                        if(items_to_delete.length>0 || categories_to_delete.length>0){
-                            confirmDelete();
-                        }      
-                        setDeleteBtn(false); 
-                    }
-                }}
-             />
+                <TouchableOpacity style={styles.button} onPress={()=> {
+                        if(!deleteBtn){
+                            setDeleteBtn(true)
+                        }else{
+                            if(items_to_delete.length>0 || categories_to_delete.length>0){
+                                confirmDelete();
+                            }
+                            setDeleteBtn(false);
+                        }
+                    }}>
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+                
 
-             {deleteBtn && <Button
-                title="Cancel"
-                color="blue"
-                onPress={()=> {
-                    items_to_delete = [];
-                    categories_to_delete = [];
-                    setDeleteBtn(!deleteBtn)
-                    console.log("cancel deletion.");
-                }}
-             />}
-
-
-        </View>
+               
+               
+                 {deleteBtn &&  <TouchableOpacity style={styles.button} onPress={()=> {
+                        items_to_delete = [];
+                        categories_to_delete = [];
+                        setDeleteBtn(!deleteBtn)
+                        console.log("cancel deletion.");
+                    }}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>}
+            </View>
         
-        <Modal 
-            animationType='fade'
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={()=> setModalVisible(false)}
-        >
-            <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
-                    <Text style={styles.modalText}>Add New Item</Text>
-                    
-                    <TextInput
-                        style={styles.input}
-                        placeholder='item name'
-                        value={newItem}
-                        onChangeText={(text)=>setNewItem(text)}
-                    />
-
-                    <DropDownPicker
-                        open={open}
-                        value={selectedCategory}
-                        items={categories} 
-                        setOpen={setOpen}
-                        setValue={setSelectedCategory}
-                        setItems={setCategories}
-                        placeholder="Select a category"
-                        
-                    />  
-
-                    {selectedCategory==="New Category" && 
+            <Modal
+                animationType='fade'
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={()=> setModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalText}>Add New Item</Text>
+        
                         <TextInput
-                        style={styles.input}
-                        placeholder='New Category Name'
-                        onChangeText={(text)=>setNewCategory(text)}
-                        value={newCategory}
+                            style={styles.input}
+                            placeholder='Item name'
+                            value={newItem}
+                            onChangeText={(text)=>setNewItem(text)}
                         />
-                    }
-
-                    <View style={styles.horizontalStack}>
-                        <Button
-                         title="Close"
-                         onPress={()=>{
-                            setModalVisible(false);
-                            setSelectedCategory("");
-                            setNewItem("");
-                         }} 
+                        <DropDownPicker
+                            open={open}
+                            value={selectedCategory}
+                            items={categories}
+                            setOpen={setOpen}
+                            setValue={setSelectedCategory}
+                            setItems={setCategories}
+                            textStyle={styles.dropdownText} 
+                            placeholder="Select a category"onPress={() => Keyboard.dismiss()}
+        
                         />
-
-                        <Button title="Add" onPress={()=> handleAddItem()} />
+                        {selectedCategory==="New Category" &&
+                            <TextInput
+                            style={styles.input}
+                            placeholder='New Category Name'
+                            onChangeText={(text)=>setNewCategory(text)}
+                            value={newCategory}
+                            />
+                        }
+                        <View style={styles.horizontalStack}>
+                            <TouchableOpacity 
+                                style={styles.modalButton} 
+                                onPress={()=>{
+                                    setModalVisible(false);
+                                    setSelectedCategory("");
+                                    setNewItem("");
+                                 }}
+                            >
+                                <Text style={styles.modalText}>Cancel</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity style={styles.modalButton} onPress={()=> handleAddItem()}>
+                                <Text style={styles.modalText}>Add</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
-            </View>  
-        </Modal>
-
-        <SectionList 
-            sections={
-                Array.from(data.entries()).map(([category,items])=>({
-                    title:category,
-                    data:Array.from(items),
-                }))
-            }
-            keyExtractor={(item,index)=>item+index}
-            renderItem={({item,section})=>(
-                <View style={styles.item} flexDirection='row'justifyContent='space-between'>
-                    <Text style={styles.item}>{item}</Text>
-                    
-                    {deleteBtn && <BouncyCheckbox
-                        isChecked={localCheck}
-                        fillColor='red'
-                        size={20}
-                        onPress={(isChecked)=>{
-                            if(isChecked){
-                                items_to_delete.push({category:section.title, item:item});
-                            }else{ //user deselect the item
-                                items_to_delete = items_to_delete.filter((i) => i.item !== item || i.category !== section.title);
-                            }
-                            
-                            console.log("items to be deleted", items_to_delete);
-                        }}
-                        
-                    />}
-                </View>
-            )} 
-            renderSectionHeader={({section:{title}})=>(
-                <View style={styles.sectionHeader} flexDirection='row'justifyContent='space-between' >
-                    <Text style={styles.sectionHeader}>{title}</Text>
-                    
-                    {deleteBtn && <BouncyCheckbox
-                        isChecked={localCheck}
-                        fillColor='red'
-                        size={20}
-                        onPress={(isChecked)=>{
-                            if(isChecked){
-                                categories_to_delete.push(title);
-                            }
-                            else{ //user deselect
-                                console.log("user deselected ",title);
-                                categories_to_delete = categories_to_delete.filter((category)=>category!==title);
-                            }
-
-                            console.log("categories to be deleted", categories_to_delete);
-                        }}
-                    />}
-                </View>
-            )}          
-        />       
-    </View>
+            </Modal>
+            
+            <SectionList
+                sections={
+                    Array.from(data.entries()).map(([category,items])=>({
+                        title:category,
+                        data:Array.from(items),
+                    }))
+                }
+                keyExtractor={(item,index)=>item+index}
+                renderItem={({item,section})=>(
+                    <View style={styles.itemContainer} flexDirection='row'justifyContent='space-between'>
+                        <Text style={styles.item}>{item}</Text>
+        
+                        {deleteBtn && <BouncyCheckbox
+                            isChecked={localCheck}
+                            fillColor='red'
+                            size={20}
+                            onPress={(isChecked)=>{
+                                if(isChecked){
+                                    items_to_delete.push({category:section.title, item:item});
+                                }else{ //user deselect the item
+                                    items_to_delete = items_to_delete.filter((i) => i.item !== item || i.category !== section.title);
+                                }
+        
+                                console.log("items to be deleted", items_to_delete);
+                            }}
+        
+                        />}
+                    </View>
+                )}
+                renderSectionHeader={({section:{title}})=>(
+                    <View style={styles.sectionHeader} flexDirection='row'justifyContent='space-between' >
+                        <Text style={styles.sectionHeader}>{title}</Text>
+        
+                        {deleteBtn && <BouncyCheckbox
+                            isChecked={localCheck}
+                            fillColor='red'
+                            size={20}
+                            onPress={(isChecked)=>{
+                                if(isChecked){
+                                    categories_to_delete.push(title);
+                                }
+                                else{ //user deselect
+                                    console.log("user deselected ",title);
+                                    categories_to_delete = categories_to_delete.filter((category)=>category!==title);
+                                }
+                                console.log("categories to be deleted", categories_to_delete);
+                            }}
+                        />}
+                    </View>
+                )}
+            />
+        </View>
+    </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#FFFDF7', //#FFF2E7
+    },
     horizontalStack:{
         flexDirection:'row',
         justifyContent:'space-between',
-        
+        gap:30,
     },
     container:{
         flex:1,
-        padding:24,
-        backgroundColor:'#FB8E65',
+        padding:22,
+        backgroundColor:'#FAEFE4',
         gap:12,
     },
     title:{
-        marginTop:16,
+        fontFamily:"Poppins-Bold",
+        marginTop:8,
         paddingVertical:8,
-        color:'#FFF4E2',
-        textAlign:'center',
-        fontSize:32,
-        fontWeight:'bold',
+        color:'#3F352F',
+        fontSize:30,
     },
     sectionHeader:{
-        fontSize: 18,
+        fontFamily:"Poppins-Bold",
+        fontSize: 19,
         fontWeight: "bold",
-        backgroundColor: "#FFCB5C",
         borderRadius:8,
-        padding:5,
+        color:"#3F352F",
+        marginVertical:3,
+        
+    },
+    itemContainer:{
+        backgroundColor: "white",
+        borderRadius: 8,
+        paddingVertical:14,
+        marginVertical:4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     item:{
-        fontSize: 14,
-        backgroundColor: "#FF937C",
-        borderRadius: 8,
-        padding:5,
-        marginVertical:4,
+        paddingLeft:12,
+        fontFamily:"Poppins-Regular",
+        fontSize: 17,
+        fontWeight:"700",
+        color:"#393736",
     },
     modalContainer:{
         flex:1,
         justifyContent:'center',
         alignItems:'center',
-        backgroundColor:'rgba(0, 0, 0, 0.4)', // Semi-transparent background
+        backgroundColor:'rgba(0, 0, 0, 0.6)', // Semi-transparent background
     },
     modalContent:{
         width:'75%',
-        backgroundColor:'#FCD0E9',
-        paddingVertical:20,
+        backgroundColor:'#F2B8A1',
+        paddingVertical:15,
         paddingHorizontal:20,
         borderRadius:10,
         alignItems:'center',
         gap:10,
     },
     modalText:{
-        marginBottom:20,
+        fontFamily:"Poppins-Bold",
+        marginVertical:10,
         fontSize:18,
         fontWeight:500,
     },
+    modalButton:{
+        backgroundColor: '#FEE5C7',
+        borderRadius: 12,
+        paddingHorizontal:10,
+        marginVertical:10,
+        justifyContent:"center",
+        alignItems:"center",
+    },
     input:{
+        fontFamily:"Poppins-Regular",
         width:'100%',
-        backgroundColor:"white",
         padding:8,
-        borderRadius:4,
+        width: "100%",
+        height: 47, // Increase height for better visibility
+        borderRadius: 10, // Smooth rounded corners
+        borderWidth: 1, // Default border
+        paddingHorizontal: 10, // Space inside the input
+        fontSize: 15, // Slightly bigger text for readability
+        color:"black",
+        backgroundColor:"white",
     },
     picker:{
         width:'100%',
@@ -420,7 +452,35 @@ const styles = StyleSheet.create({
         borderRadius:4,
         marginVertical:10,
     },
-    
+    dropdownText: {
+        fontFamily:"Poppins-Regular",
+        fontSize: 16,
+        color: "#63605F",  // ✅ Same text color as inputs
+    },
+    button:{
+        backgroundColor: '#F0A65D',
+        borderRadius: 10,
+        padding:10,
+        marginVertical:10,
+    },
+    buttonText:{
+        fontFamily:"Poppins-Bold",
+        color: 'white',
+        fontSize: 17,
+        textAlign:"center",
+    },
+    deleteButtonText:{
+        fontFamily:"Poppins-Bold",
+        color: "#FF1D00",
+        fontSize: 16,
+        textAlign:"center",
+    },
+    cancelButtonText:{
+        fontFamily:"Poppins-Bold",
+        color: "#F5EEE6",
+        fontSize: 16,
+        textAlign:"center",
+    },
 });
 
 

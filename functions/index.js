@@ -136,11 +136,16 @@ exports.createEmployee = functions.https.onCall(async (data) => {
 
         console.log(`✅ User ${userId} stored in Firestore.`);
 
-        //send password reset email
-        const resetLink = await admin.auth().generatePasswordResetLink(email);
-        console.log(`📩 Password reset email sent to ${email}`);
+        //generate password reset email
+        try{
+            const resetLink = await admin.auth().generatePasswordResetLink(email);
+            console.log(`📩 Password reset link generated: ${resetLink}`);
 
-        return { success: true, userId, message: `${name} added as a ${role}.`, resetLink};
+            return { success: true, userId, message: `${name} added as a ${role}.`, resetLink};
+        }catch(error){
+            console.error("❌ Error generating password reset link:", error);
+            return { success: false, message: "Error generating password reset link." };
+        }
     }catch(error){
         console.error("❌ Error creating employee:", error);
         throw new functions.https.HttpsError("internal", "Error creating employee.", error);
@@ -193,6 +198,10 @@ exports.deleteEmployee = functions.https.onCall(async (data) => {
         await employeeRef.delete();
         console.log(`✅ Employee ${employeeId} removed from Firestore.`);
 
+        //revoke tokens immediately so they are logged out
+        await admin.auth().revokeRefreshTokens(employeeId);
+        console.log(`🔐 Revoked token for user ${employeeId}.`);
+
         // Delete the user from Firebase Authentication
         await admin.auth().deleteUser(employeeId);
         console.log(`✅ Employee ${employeeId} removed from Firebase Authentication.`);
@@ -201,5 +210,26 @@ exports.deleteEmployee = functions.https.onCall(async (data) => {
     } catch (error) {
         console.error("❌ Error deleting employee:", error);
         throw new functions.https.HttpsError("internal", "Failed to delete employee.", error);
+    }
+});
+
+exports.deleteAuthUser = functions.https.onCall(async (data, context) => {
+    // Ensure the request is authenticated
+    if (!context.auth || context.auth.token.role !== "manager") {
+        throw new functions.https.HttpsError("permission-denied", "Only managers can delete users.");
+    }
+
+    const { userId } = data.data;
+
+    if (!userId) {
+        throw new functions.https.HttpsError("invalid-argument", "User ID is required.");
+    }
+
+    try {
+        await admin.auth().deleteUser(userId);
+        return { success: true, message: `User ${userId} deleted successfully.` };
+    } catch (error) {
+        console.error("❌ Error deleting user:", error);
+        throw new functions.https.HttpsError("internal", "Failed to delete user.");
     }
 });

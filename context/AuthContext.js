@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut} from "firebase/auth";
 import { auth } from "../firebase";
 import SplashScreen from "../screens/Authentication/SplashScreen";
-
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 //create the Auth context
 const AuthContext = createContext();
@@ -13,6 +13,7 @@ export const AuthProvider = ({children}) => {
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState(null);
     const [restaurantId, setRestaurantId] = useState(null);
+    const [name, setName] = useState(null);
 
     //function to check claims - retry for 10 secs before logging user out
     const checkClaims = async (currentUser) => {
@@ -37,10 +38,35 @@ export const AuthProvider = ({children}) => {
         logout();
     }
 
+    //function to fetch user's details from firestore
+    const fetchUserDetails = async (uid) => {
+        const db = getFirestore();
+        try{
+            console.log("Fetching user details for:", uid);
+
+            const userDocRef = doc(db, "users", uid);
+            const userSnapShot = await getDoc(userDocRef);
+
+            if(userSnapShot.exists()){
+                const userData = userSnapShot.data();
+                console.log("Firestore user data:", userData);
+                setName(userData.name || "No Name Found");
+            }else{
+                console.warn("Nor user document found in firestore");
+                setName(null);
+            }
+
+        }catch(error){
+            console.error("Error fetchign user details:", error);
+            setName(null);
+        }
+    }
+
     useEffect(()=>{
         const unsubscribe = onAuthStateChanged(auth, async (currentUser)=>{
             if(currentUser){
                 await checkClaims(currentUser);
+                await fetchUserDetails(currentUser.uid);
                 setUser(currentUser);
             }else{
                 setUser(null);
@@ -63,7 +89,7 @@ export const AuthProvider = ({children}) => {
     };
 
     return(
-        <AuthContext.Provider value={{user,role,restaurantId,logout}}>
+        <AuthContext.Provider value={{user,name,role,restaurantId,logout}}>
             {loading ? <SplashScreen/> : children}
         </AuthContext.Provider>
     );

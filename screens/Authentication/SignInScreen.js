@@ -104,10 +104,10 @@ const styles = StyleSheet.create({
         justifyContent:"center",
     },
     title:{
-        fontWeight:"bold",
+       fontFamily:"Poppins-Bold",
         fontSize:40,
         color: "#F9F3EE",
-        marginBottom:40,
+        marginBottom:35,
     },
     inputBox:{
         width:"80%",
@@ -125,15 +125,16 @@ const styles = StyleSheet.create({
         height:40,
         color: "#5A5A5A", // Darker gray for better contrast
         fontSize: 16,
+        fontFamily:"Poppins-Regular",
     },
     signInBtn:{
-        backgroundColor:"#D47F42",
+        backgroundColor:"#EE744F",
         padding:10,
-        borderRadius:8,
+        borderRadius:10,
     },
     signInBtnText:{
-        color:"#3E3C3B",
-        fontWeight:"400",
+        color:"#F9F3EE",
+        fontFamily:"Poppins-Bold",
         fontSize:18,
     },
     signup:{
@@ -143,10 +144,12 @@ const styles = StyleSheet.create({
     signUpText:{
         fontWeight:"300",
         fontSize:18,
+        fontFamily:"Poppins-Regular",
         color:"#676666",
         marginBottom:20,
     },
     signUpLink:{
+        fontFamily:"Poppins-Regular",
         fontWeight:"300",
         fontSize:18,
         color:"#EE744F",

@@ -17,6 +17,7 @@ const SignUpScreen = () => {
     const [name, setName] = useState("");
     const [resName, setResName] = useState("");
     const [loading, setLoading] = useState(false);
+    const [emailError, setEmailError] = useState("");
 
     
     const handleSignUp = async () => {
@@ -24,6 +25,16 @@ const SignUpScreen = () => {
             Alert.alert("Error", "Please fill in all fields.");
             return;
         }
+
+        //validate email 
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!emailRegex.test(email)){
+            setEmailError("Please enter a valid email address.");
+            return;
+        }else{
+            setEmailError(""); //clear error if valid
+        }
+
        
         setLoading(true); //show splash screen while signing up
 
@@ -93,8 +104,7 @@ const SignUpScreen = () => {
             console.log("✅ Firestore user role updated.");
 
 
-            //step 8 : navigate to home when sign up is done
-            navigation.navigate("Home");
+            console.log("✅ Sign-up complete! The app will now automatically switch to the correct screen.");
         }catch(error){
             console.error("Error during sign-up: ", error.message);
             Alert.alert("Sign-Up Failed", error.message);
@@ -114,6 +124,7 @@ const SignUpScreen = () => {
             //create restaurant document
             const restaurantDoc = setDoc(doc(db,`restaurants/${restaurantId}`),{
                 ownerId: restaurantId,
+                ownerName: name,
                 restaurantName: resName,
                 createdAt: new Date(),
             });
@@ -131,7 +142,7 @@ const SignUpScreen = () => {
             //supply requests collection : prepopulated 
             const supplyRequestsDoc = setDoc(doc(db, `restaurants/${restaurantId}/supply_requests/server_requests`), {
                 "Soft Drinks": ["Coke", "Sprite"],
-                "Beer": ["Sapporo"],
+                "Beer": ["Sapporo", "Singha"],
             });
             
             //posts collection 
@@ -139,6 +150,8 @@ const SignUpScreen = () => {
                 title:`Welcome to ${resName}'s Dashboard!`,
                 content:"This is your first post. You can use this section to post announcements.",
                 createdAt: new Date(),
+                createdBy: "Platu Pro",
+                restaurantId: restaurantId,
             });
            
             //wait for ALL writes to finish before moving on
@@ -198,10 +211,14 @@ const SignUpScreen = () => {
                             style={styles.inputText}
                             placeholder="Email"
                             value={email}
-                            onChangeText={(text)=>setEmail(text)}
+                            onChangeText={(text)=>{
+                                setEmail(text)
+                                setEmailError(""); //clear error when user starts typing again
+                            }}
                             keyboardType="email-address"
                             autoCapitalize="none"
                         />
+                        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                     </View>
 
                     <View style={styles.inputBox}>
@@ -250,17 +267,19 @@ const styles = StyleSheet.create({
         marginBottom:20,
     },
     title:{
-        fontWeight:"bold",
+        fontFamily:"Poppins-Bold",
         fontSize:35,
-        color:"#676666",
+        color:"white",
         marginBottom:20,
     },
     subTitle:{
+        fontFamily:"Poppins-Regular",
         fontSize:18,
         fontWeight:"400",
         color:"#676666",
     },
     subTitle2:{
+        fontFamily:"Poppins-Regular",
         fontWeight:"500",
         fontSize:18,
         color:"#EE744F",
@@ -269,30 +288,38 @@ const styles = StyleSheet.create({
     },
     inputBox:{
         width:"85%",
-        height:50,
+        height:45,
         backgroundColor: "#FCE2C7",
         borderRadius:15,
         borderWidth: 1,
         borderColor: "#E3B590",
         paddingHorizontal: 15,
-        marginBottom:15,
+        marginBottom:20,
         justifyContent:"center",
         elevation: 2, // Subtle shadow for input box
+        
     },
     inputText:{
+        fontFamily:"Poppins-Regular",
         height:40,
         color:"gray",
         fontSize: 16,
         color: "#5A5A5A",
     },
+    errorText:{
+        fontFamily:"Poppins-Regular",
+        color:"red",
+        fontSize:14,
+        textAlign:"left",
+    },
     signUpBtn:{
-        backgroundColor:"#FD9E81",
+        backgroundColor:"#FB9546",
         padding:10,
         borderRadius:8,
     },
     signUpBtnText:{
-        color:"#3E3C3B",
-        fontWeight:"400",
+        fontFamily:"Poppins-Bold",
+        color:"white",
         fontSize:18,
     },
     
