@@ -59,7 +59,8 @@ const styles = StyleSheet.create({
         fontFamily: "Poppins-Bold",
         fontSize: 28,
         color: "#2C2C2B",
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingVertical:10,
     },
     section: {
         margin: 10,

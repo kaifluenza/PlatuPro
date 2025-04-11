@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Modal, FlatList, Alert, Image, 
-    KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard
+    KeyboardAvoidingView, ScrollView, Platform, TouchableWithoutFeedback, Keyboard
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,7 +9,6 @@ import { subscribeToPosts } from '../../data/postsData';
 import { useState, useEffect } from 'react';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import AppText from '../../components/AppText';
-
 
 import { getFirestore, collection, getDoc, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 
@@ -66,6 +65,29 @@ const HomeScreen = () => {
             console.error("Error creating post: ", error);
         }
     }
+
+    //before canceling posting , ask to discard text
+    const handleCancel = () => {
+        if (newPostText.trim()) {
+          Alert.alert(
+            "Discard post?",
+            "You have unsaved text. Do you want to discard it?",
+            [
+              { text: "Keep Editing", style: "cancel" },
+              {
+                text: "Discard",
+                style: "destructive",
+                onPress: () => {
+                  setNewPostText("");
+                  setModalVisible(false);
+                }
+              }
+            ]
+          );
+        } else {
+          setModalVisible(false);
+        }
+    }     
        
 
     //function to delete post
@@ -198,41 +220,50 @@ const HomeScreen = () => {
                         onRequestClose={()=>setModalVisible(false)}
                     >
                         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                            <View style={styles.modalContainer}>
+                            <View style={styles.modalOverlay}>
                                 <KeyboardAvoidingView
-                                     behavior={Platform.OS === "ios" ? "padding" : "height"} 
-                                     style={styles.modalAvoidingView}
+                                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                    style={styles.modalAvoidingView}
                                 >
                                     <View style={styles.modalContent}>
-                                        {/* Header */}
-                                        <View style={styles.modalHeader}>
-                                            <TouchableOpacity onPress={()=>setModalVisible(false)}>
-                                                <AppText style={styles.cancelText}>Cancel</AppText>
-                                            </TouchableOpacity>
-                                            <AppText style={styles.modalTitle}>New Post</AppText>
-                                        </View>
-                                        {/* User Avatar + Input field */}
-                                        <View style={styles.modalBody}>
-                                            <FontAwesome5 name="user-circle" size={24} color="#FAA462" />
-                                            <TextInput
-                                                style={styles.textInput}
-                                                placeholder="What's new?"
-                                                value={newPostText}
-                                                onChangeText={setNewPostText}
-                                                multiline
-                                            />
-                                        </View>
-                                        {/* Footer */}
-                                        <View style={styles.modalFooter}>
-                                            <AppText style={styles.replyText}>Comments Disabled</AppText>
-                                            <TouchableOpacity
-                                                style={[styles.postButton, !newPostText && styles.disabledButton]}
-                                                onPress={handleCreatePost}
-                                                disabled={!newPostText}
-                                            >
-                                                <AppText style={styles.postButtonText}>Post</AppText>
-                                            </TouchableOpacity>
-                                        </View>
+                                        <ScrollView
+                                             contentContainerStyle={styles.modalScrollContainer}
+                                            keyboardShouldPersistTaps="handled"
+                                        >
+                                            {/* Header */}
+                                            <View style={styles.modalHeader}>
+                                                <TouchableOpacity onPress={()=>handleCancel()}>
+                                                    <AppText style={styles.cancelText}>Cancel</AppText>
+                                                </TouchableOpacity>
+                                                <AppText style={styles.modalTitle}>New Post</AppText>
+                                            </View>
+                            
+                                            {/* User Avatar + Input field */}
+                                            <View style={styles.modalBody}>
+                                                <FontAwesome5 name="user-circle" size={24} color="#FAA462" />
+                                                <TextInput
+                                                    style={styles.textInput}
+                                                    placeholder="What's new?"
+                                                    value={newPostText}
+                                                    onChangeText={setNewPostText}
+                                                    multiline
+                                                    scrollEnabled
+                                                />
+                                            </View>
+                            
+                                            {/* Footer */}
+                                            <View style={styles.modalFooter}>
+                                                <AppText style={styles.replyText}>Comments Disabled</AppText>
+                                                <TouchableOpacity
+                                                    style={[styles.postButton, !newPostText && styles.disabledButton]}
+                                                    onPress={handleCreatePost}
+                                                    disabled={!newPostText}
+                                                >
+                                                    <AppText style={styles.postButtonText}>Post</AppText>
+                                                </TouchableOpacity>
+                                            </View>
+                            
+                                        </ScrollView>
                                     </View>
                                 </KeyboardAvoidingView>
                             </View>
@@ -343,11 +374,23 @@ const styles = StyleSheet.create({
         marginLeft:10,
     },
     /* Modal Styling */
-    modalContainer: { 
-        flex: 1, 
-        justifyContent: "center", 
-        alignItems: "center", 
-        backgroundColor: "rgba(0,0,0,0.5)" 
+    modalOverlay:{
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalScrollContainer: {
+        flexGrow: 1,
+        justifyContent: "center",
+    },
+    textInput: {
+        flex: 1,
+        fontFamily: "Poppins-Regular",
+        fontSize: 16,
+        paddingVertical: 10,
+        maxHeight: 300, // prevents endless growth
+        textAlignVertical: "top", // ensures text starts at the top
     },
     modalAvoidingView: { 
         flex: 1, 
@@ -357,14 +400,13 @@ const styles = StyleSheet.create({
     },
     modalContent: { 
         backgroundColor: "white", 
-        width: "90%", 
+        width: "88%", 
         borderRadius: 10, 
         padding: 20 },
     modalHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
     cancelText: { color: "red", fontFamily:"Poppins-Regular", fontSize: 16 },
     modalTitle: { fontSize: 18, fontFamily:"Poppins-Bold", },
     modalBody: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical:10, },
-    textInput: { flex: 1,fontFamily:"Poppins-Regular", fontSize: 16, paddingVertical: 10 },
     modalFooter: { flexDirection: "row", justifyContent: "space-between", alignItems:"center", marginTop: 10 },
     replyText: { fontFamily:"Poppins-Regular", color: "gray" },
     postButton: { backgroundColor: "orange", padding: 10, borderRadius: 10},

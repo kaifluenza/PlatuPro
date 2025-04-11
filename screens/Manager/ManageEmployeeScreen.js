@@ -322,7 +322,7 @@ const ManageEmployeeScreen = () => {
                         />
                     </View>
                 )}
-                contentContainerStyle={[styles.container, { paddingBottom: 150}]}
+                contentContainerStyle={styles.container}             
                 showsVerticalScrollIndicator={false}
             />
 
@@ -408,7 +408,7 @@ const ManageEmployeeScreen = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#FFFDF7',
+        backgroundColor: '#FAF4E4',
     },
     container:{
         padding:15,

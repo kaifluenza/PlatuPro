@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Touchable } from 'react-native';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, SafeAreaView } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
 import { subscribeToServerInventory } from '../../data/inventoryData'; 
 import { subscribeToServerRequests } from '../../data/requestedData';
@@ -160,154 +160,148 @@ const RestockingScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <SectionList
-        sections={sections} 
-        keyExtractor={(item,index)=> item+index}
-        ListHeaderComponent={ //request list
-          <>
-            <Text style={styles.title}>Restocking List</Text>
-
-            <View style={styles.requestsContainer}>
-              <SectionList
-                sections={sectionedRequests}
-                keyExtractor={(item, index)=>item+index}
-                renderItem={({item})=>
-                  <View style={styles.requestSection}>
-                    <Text style={styles.itemText}>{item}</Text>
-                  </View>}
-                renderSectionHeader={({section:{title}})=>(
-                  <View style={styles.requestSectionTitle}>
-                    <Text style={styles.requestSectionHeaderText}>{title}</Text>
-                  </View>
-                )}
-                scrollEnabled={false} //prevents nested scrolling
-              />
-            </View>
-          
-
-            <Text style={styles.title}>Inventory</Text>
-
-            <View style={styles.horizontalStack}>
-                <TouchableOpacity onPress={()=>setRequestBtn(true)} style={styles.button}>
-                  <Text style={styles.buttonText}>Request</Text>
-                </TouchableOpacity>
-
-                {!requestBtn ? (<TouchableOpacity onPress={()=>setModalVisible(true)} style={styles.button}>
-                  <Text style={styles.buttonText}>Custom</Text>
-                </TouchableOpacity>) : null}
-
-
-                {requestBtn && (
-                  <>
-                    <TouchableOpacity 
-                      style={styles.button}
-                      onPress={()=>{
-                        handleSendRequest();
-                        request_list = [];
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <SectionList
+          sections={sections}
+          keyExtractor={(item,index)=> item+index}
+          ListHeaderComponent={ //request list
+            <>
+              <Text style={styles.title}>Restocking List</Text>
+              <View style={styles.requestsContainer}>
+                <SectionList
+                  sections={sectionedRequests}
+                  keyExtractor={(item, index)=>item+index}
+                  renderItem={({item})=>
+                    <View style={styles.requestSection}>
+                      <Text style={styles.itemText}>{item}</Text>
+                    </View>}
+                  renderSectionHeader={({section:{title}})=>(
+                    <View style={styles.requestSectionTitle}>
+                      <Text style={styles.requestSectionHeaderText}>{title}</Text>
+                    </View>
+                  )}
+                  scrollEnabled={false} //prevents nested scrolling
+                />
+              </View>
+      
+              <Text style={styles.title}>Inventory</Text>
+              <View style={styles.horizontalStack}>
+                  <TouchableOpacity onPress={()=>setRequestBtn(true)} style={styles.button}>
+                    <Text style={styles.buttonText}>Request</Text>
+                  </TouchableOpacity>
+                  {!requestBtn ? (<TouchableOpacity onPress={()=>setModalVisible(true)} style={styles.button}>
+                    <Text style={styles.buttonText}>Custom</Text>
+                  </TouchableOpacity>) : null}
+                  {requestBtn && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.button}
+                        onPress={()=>{
+                          handleSendRequest();
+                          request_list = [];
+                          setRequestBtn(false);
+                        }}
+                      >
+                        <Text style={styles.buttonText}>Send</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={()=>{
+                        request_list=[];
                         setRequestBtn(false);
-                      }}
-                    >
-                      <Text style={styles.buttonText}>Send</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={()=>{
-                      request_list=[];
-                      setRequestBtn(false);
-                    }} style={styles.cancelButton}>
-                      <Text style={styles.buttonText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
+                      }} style={styles.cancelButton}>
+                        <Text style={styles.buttonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+              </View>
+            </>
+          } //inventory list
+          renderItem={({ item, section }) => (
+            <View style={styles.itemContainer} flexDirection="row" justifyContent="space-between">
+              <Text style={styles.itemText}>{item}</Text>
+              {requestBtn && (
+                <BouncyCheckbox
+                  size={20}
+                  fillColor="green"
+                  onPress={(isChecked) => {
+                    if (isChecked) {
+                      request_list.push({ category: section.title, item: item });
+                    } else {
+                      request_list = request_list.filter(
+                        (array_item) => array_item.item !== item || array_item.category !== section.title
+                      );
+                    }
+                  }}
+                />
+              )}
             </View>
-          </>
-        } //inventory list
-        renderItem={({ item, section }) => (
-          <View style={styles.itemContainer} flexDirection="row" justifyContent="space-between">
-            <Text style={styles.itemText}>{item}</Text>
-
-            {requestBtn && (
-              <BouncyCheckbox
-                size={20}
-                fillColor="green"
-                onPress={(isChecked) => {
-                  if (isChecked) {
-                    request_list.push({ category: section.title, item: item });
-                  } else {
-                    request_list = request_list.filter(
-                      (array_item) => array_item.item !== item || array_item.category !== section.title
-                    );
-                  }
-                }}
-              />
-            )}
-          </View>
-        )}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeaderContainer}>
-            <Text style={styles.sectionHeader}>{title}</Text>
-          </View>
-        )}
-      />
-
-
-      <Modal
-                      animationType='fade'
-                      transparent={true}
-                      visible={modalVisible}
-                      onRequestClose={()=> setModalVisible(false)}
-                  >
-                      <View style={styles.modalContainer}>
-                          <View style={styles.modalContent}>
-                              <Text style={styles.modalText}>Add Custom Item</Text>
-              
-                              <TextInput
-                                  style={styles.input}
-                                  placeholder='Item name'
-                                  value={customItem}
-                                  onChangeText={(text)=>{
-                                    setCustomItem(text);
-                                    setCustomError(""); //clear error when user starts typing again
-                                  }}
-                              />
-                      
-                              {customError ? <Text style={styles.errorText}>{customError}</Text> : null}
-        
-
-                              <View style={[styles.buttonContainer]}>
-                                <TouchableOpacity 
-                                  style={styles.modalButton}
-                                  onPress={()=>{
-                                    setModalVisible(false);
-                                    setCustomItem(""); // Clear field when closing
-                                    setCustomError(""); // Clear any error
-                                  }}
-                                >
-                                  <AppText style={styles.modalButtonText}>Close</AppText>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity 
-                                  style={styles.modalButton}
-                                  onPress={()=>handleCustomRequest()}
-                                >
-                                  <AppText style={styles.modalButtonText}>Submit</AppText>
-                                </TouchableOpacity>
-                                
-                              </View>
-                          </View>
-                      </View>
-                  </Modal>
-
-    </View>
+          )}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeaderContainer}>
+              <Text style={styles.sectionHeader}>{title}</Text>
+            </View>
+          )}
+        />
+        <Modal
+                        animationType='fade'
+                        transparent={true}
+                        visible={modalVisible}
+                        onRequestClose={()=> setModalVisible(false)}
+                    >
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalText}>Add Custom Item</Text>
+      
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder='Item name'
+                                    value={customItem}
+                                    onChangeText={(text)=>{
+                                      setCustomItem(text);
+                                      setCustomError(""); //clear error when user starts typing again
+                                    }}
+                                />
+      
+                                {customError ? <Text style={styles.errorText}>{customError}</Text> : null}
+      
+                                <View style={[styles.buttonContainer]}>
+                                  <TouchableOpacity
+                                    style={styles.modalButton}
+                                    onPress={()=>{
+                                      setModalVisible(false);
+                                      setCustomItem(""); // Clear field when closing
+                                      setCustomError(""); // Clear any error
+                                    }}
+                                  >
+                                    <AppText style={styles.modalButtonText}>Close</AppText>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.modalButton}
+                                    onPress={()=>handleCustomRequest()}
+                                  >
+                                    <AppText style={styles.modalButtonText}>Submit</AppText>
+                                  </TouchableOpacity>
+      
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+      </View>
+    </SafeAreaView>
 
     
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8F8F8', // match your container color
+  },  
   container: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 22,
+    paddingVertical:10,
     backgroundColor: '#F8F8F8',
   },
   title: {

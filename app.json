@@ -4,28 +4,38 @@
     "slug": "PlatuPro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/fish_logo.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
-      "image": "./assets/fish_logo.png",
+      "image": "./assets/fish_logo_medium.png",
       "resizeMode": "contain",
-      "backgroundColor": "##F8F8F8"
+      "backgroundColor": "#FFD0A3"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wanruenik.PlatuPro",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/fish_logo_medium.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.wanruenik.PlatuPro"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d6c35d4a-8c43-4774-8669-2e230e275bd4"
+      }
+    }
   }
 }

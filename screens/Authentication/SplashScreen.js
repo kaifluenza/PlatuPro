@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Dimensions } from "react-native";
 import { View, Image, StyleSheet, Text, ActivityIndicator} from "react-native";
 
 const SplashScreen = ({onFinish, message}) => {
@@ -29,6 +30,11 @@ const SplashScreen = ({onFinish, message}) => {
     );
 };
 
+
+const { width, height } = Dimensions.get("window");
+
+const logoSize = Math.min(width * 0.5, 480);
+
 const styles = StyleSheet.create({
     container:{
         flex:1,
@@ -37,8 +43,8 @@ const styles = StyleSheet.create({
         justifyContent:"center",
     },
     logo:{
-        width:250,
-        height:250,
+        width:logoSize,
+        height:logoSize,
     },
     loadingContainer:{
         flexDirection:"row",

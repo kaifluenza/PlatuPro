@@ -20,9 +20,8 @@ import MoreScreen from './screens/Manager/MoreScreen';
 import EmployeeDashboardScreen from './screens/Server/EmployeeDashboardScreen';
 import RestockingScreen from './screens/Server/RestockingScreen';
 
-// import AssistantHomeScreen from './screens/AssistantManager/AssistantHomeScreen';
-
 import AccountScreen from './screens/AccountScreen';
+
 //import PostDetailsScreen from './screens/PostDetailssScreen';
 
 import { Ionicons } from '@expo/vector-icons';
