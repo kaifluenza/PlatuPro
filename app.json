@@ -4,11 +4,11 @@
     "slug": "PlatuPro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/fish_logo.png",
+    "icon": "./assets/fish_logo_small.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/fish_logo_medium.png",
+      "image": "./assets/fish_logo_small.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFD0A3"
     },
