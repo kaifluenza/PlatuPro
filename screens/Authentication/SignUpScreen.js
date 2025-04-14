@@ -206,18 +206,25 @@ const SignUpScreen = () => {
                     />
                     </View>
 
-                    <View style={styles.inputBox}>
-                        <TextInput
-                            style={styles.inputText}
-                            placeholder="Email"
-                            value={email}
-                            onChangeText={(text)=>{
-                                setEmail(text)
-                                setEmailError(""); //clear error when user starts typing again
-                            }}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
+                    <View style={{ width: "90%", marginBottom: 10, paddingHorizontal:10 }}>
+                        <View style={styles.emailBox}>
+                            <TextInput
+                                style={styles.inputText}
+                                placeholder="Email"
+                                value={email}
+                                onChangeText={(text)=>{
+                                    setEmail(text)
+                                    setEmailError(""); //clear error when user starts typing again
+                                }}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                textContentType="emailAddress"
+                                autoComplete="email"
+                                importantForAutofill="yes"
+                            />
+                        </View>
+
                         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                     </View>
 
@@ -226,8 +233,12 @@ const SignUpScreen = () => {
                             style={styles.inputText}
                             placeholder="Password"
                             secureTextEntry
-                            value={password}
+                            value={password} 
                             onChangeText={(text)=>setPassword(text)}
+                            textContentType="oneTimeCode"
+                            autoComplete="off"
+                            autoCorrect={false}
+                            autoCapitalize="none"
                         />
                     </View>
 
@@ -298,6 +309,17 @@ const styles = StyleSheet.create({
         justifyContent:"center",
         elevation: 2, // Subtle shadow for input box
         
+    },
+    emailBox:{
+        height:45,
+        backgroundColor: "#FCE2C7",
+        borderRadius:15,
+        borderWidth: 1,
+        borderColor: "#E3B590",
+        paddingHorizontal: 15,
+        marginBottom:10,
+        justifyContent:"center",
+        elevation: 2, // Subtle shadow for input box
     },
     inputText:{
         fontFamily:"Poppins-Regular",

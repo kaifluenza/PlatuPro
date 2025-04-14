@@ -125,6 +125,7 @@ const RequestScreen = () => {
             </View>
 
             <View style={styles.requestsContainer}>
+                {sectionedRequests.length===0 && <Text style={styles.noRequest}>No requests...</Text>}
                 <SectionList
                     sections={sectionedRequests}  // Use the transformed data
                     keyExtractor={(item, index) => item + index}
@@ -182,6 +183,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems:"center",
+    },
+    noRequest:{
+        fontFamily:"Poppins-Regular",
+        color:'#5F584E',
+        fontSize:18,
+        marginVertical:220,
+        marginHorizontal:90,
     },
     requestsContainer:{
         flex:1,

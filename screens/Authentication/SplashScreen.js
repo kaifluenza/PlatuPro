@@ -33,7 +33,7 @@ const SplashScreen = ({onFinish, message}) => {
 
 const { width, height } = Dimensions.get("window");
 
-const logoSize = Math.min(width * 0.5, 480);
+const logoSize = Math.min(width * 0.7, 480);
 
 const styles = StyleSheet.create({
     container:{

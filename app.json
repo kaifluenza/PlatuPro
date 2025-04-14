@@ -4,11 +4,11 @@
     "slug": "PlatuPro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/fish_logo_small.png",
+    "icon": "./assets/fish_logo_xs.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/fish_logo_small.png",
+      "image": "./assets/fish_logo_xs.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFD0A3"
     },
@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/fish_logo_medium.png",
+        "foregroundImage": "./assets/fish_logo_xs.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.wanruenik.PlatuPro"
